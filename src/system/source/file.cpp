@@ -219,8 +219,21 @@ void VDFile::truncate() {
 }
 
 bool VDFile::extendValidNT(sint64 pos) {
-	// POSIX doesn't have SetFileValidData. posix_fallocate is the closest.
+	// POSIX doesn't have SetFileValidData. Pre-allocate via the
+	// platform's closest equivalent and truncate to size.
+#if defined(__linux__)
 	return posix_fallocate(mhFile, 0, (off_t)pos) == 0;
+#elif defined(__APPLE__)
+	fstore_t store{F_ALLOCATECONTIG, F_PEOFPOSMODE, 0, (off_t)pos, 0};
+	if (fcntl(mhFile, F_PREALLOCATE, &store) == -1) {
+		store.fst_flags = F_ALLOCATEALL;
+		if (fcntl(mhFile, F_PREALLOCATE, &store) == -1)
+			return false;
+	}
+	return ftruncate(mhFile, (off_t)pos) == 0;
+#else
+	return ftruncate(mhFile, (off_t)pos) == 0;
+#endif
 }
 
 void VDFile::extendValid(sint64 pos) {
