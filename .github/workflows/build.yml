@@ -80,8 +80,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-13
-            arch: x86_64
+          # macos-14 = Apple Silicon. Intel macOS (macos-13) was dropped from
+          # the matrix because GHA's macos-13 hosted-runner queue is routinely
+          # backed up; the same code path compiles on x86_64 macOS too (no
+          # arm64-only sources, the SSE2 fast paths kick in instead of NEON)
+          # so reinstating it is a one-line matrix add when CI capacity comes
+          # back.
           - runner: macos-14
             arch: arm64
     runs-on: ${{ matrix.runner }}
