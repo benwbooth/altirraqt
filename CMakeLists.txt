@@ -29,7 +29,8 @@ set_target_properties(altirraqt PROPERTIES
     SKIP_BUILD_RPATH FALSE)
 
 install(TARGETS altirraqt
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    BUNDLE  DESTINATION ${CMAKE_INSTALL_BINDIR})   # macOS .app
 
 install(FILES data/applications/altirraqt.desktop
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)

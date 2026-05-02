@@ -122,47 +122,15 @@ jobs:
           path: altirraqt-macos-${{ matrix.arch }}.zip
 
   # -----------------------------------------------------------------------
-  # Windows: MSVC + Qt6 + windeployqt. Produces a zip of altirraqt.exe with
-  # all Qt DLLs and platform plugins alongside.
+  # Windows: deferred. Native Altirra (the upstream this is a Qt port of)
+  # already ships a polished Win32 build at virtualdub.org/altirra.html, so
+  # a Qt port on Windows duplicates work for little user benefit. The Qt
+  # port also assumes a POSIX system library (src/system/source/thread.cpp,
+  # memory.cpp, process.cpp, filesys.cpp depend on pthread/sys/syscall/
+  # unistd) that MSVC doesn't provide. Re-porting those to Win32 is several
+  # days of careful work; not gated on this CI rollout. Drop in a windows
+  # job here when/if that port lands.
   # -----------------------------------------------------------------------
-  windows:
-    needs: prebuild-roms
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: prebuilt-roms
-          path: prebuilt-roms/
-      - uses: ilammy/msvc-dev-cmd@v1
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.7.3'
-          modules: 'qtmultimedia'
-          arch: 'win64_msvc2019_64'
-          cache: true
-      - name: Configure
-        shell: bash
-        run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DPREBUILT_KERNEL_ROMS_DIR="$PWD/prebuilt-roms"
-      - name: Build
-        shell: bash
-        run: cmake --build build -j
-      - name: Bundle (windeployqt)
-        shell: bash
-        run: |
-          mkdir -p dist/altirraqt
-          cp build/src/altirraqt/altirraqt.exe dist/altirraqt/
-          windeployqt --release --no-translations --no-system-d3d-compiler \
-                      --no-opengl-sw dist/altirraqt/altirraqt.exe
-          7z a altirraqt-windows-x86_64.zip ./dist/altirraqt
-          ls -lh altirraqt-windows-x86_64.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-x86_64
-          path: altirraqt-windows-x86_64.zip
 
   # -----------------------------------------------------------------------
   # On v* tag pushes, attach all platform artifacts to the GH release.
@@ -170,7 +138,7 @@ jobs:
   # -----------------------------------------------------------------------
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, macos, windows]
+    needs: [linux, macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
