@@ -18,7 +18,7 @@ add_library(vd2_system STATIC
     source/file.cpp
     source/filestream.cpp
     source/filesys.cpp
-    source/Fraction.cpp
+    source/fraction.cpp
     source/event.cpp
     source/function.cpp
     source/halffloat.cpp
