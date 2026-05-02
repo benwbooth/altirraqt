@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=altirraqt
+GenericName=Atari 8-bit Emulator
+Comment=Qt port of Avery Lee's Altirra emulator (Atari 800/800XL/130XE/5200)
+Exec=altirraqt %F
+Icon=altirraqt
+Terminal=false
+Categories=Game;Emulator;
+MimeType=application/x-atari800-cartridge;application/x-atari-disk-image;
+Keywords=atari;emulator;8-bit;5200;800xl;

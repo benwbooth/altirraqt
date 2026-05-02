@@ -1,0 +1,108 @@
+.TH ALTIRRAQT 1 "2026-05-01" "altirraqt" "User Commands"
+.SH NAME
+altirraqt \- Qt port of the Altirra Atari 8-bit emulator
+.SH SYNOPSIS
+.B altirraqt
+[\fIOPTIONS\fR]
+[\fIimage\fR]
+.SH DESCRIPTION
+.B altirraqt
+emulates the Atari 800, 800XL, 130XE and 5200 home computers.  It is a
+Qt port of Avery Lee's Altirra; the upstream Win32 GUI is replaced
+with Qt 6 widgets and a QOpenGLWidget-backed video display, while the
+core emulator (CPU, ANTIC, GTIA, POKEY, disk / cassette / cartridge
+peripherals) is the unmodified upstream code.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display help on commandline options.
+.TP
+.B \-\-help-all
+Display help including Qt-specific options.
+.TP
+.BR \-v ", " \-\-version
+Display version information.
+.TP
+.BI \-\-kernel " file"
+Path to an Atari kernel ROM (Atari 800 OS-A/OS-B, Atari 800XL OS,
+etc.). Overrides the bundled AltirraOS for the current hardware mode.
+.TP
+.BI \-\-basic " file"
+Path to an Atari BASIC ROM. Overrides the bundled Altirra BASIC.
+.TP
+.BI \-\-image " file"
+Mount
+.I file
+as a disk / cassette / cartridge — the auto-detect figures out which
+from the contents.
+.TP
+.BI \-\-type " text"
+Synthesise a sequence of key presses (each character of
+.IR text )
+into the running emulator after a one-second startup pause. Useful
+for headless smoke-testing keyboard input.
+.TP
+.BI \-\-screenshot " seconds:path"
+After
+.I seconds
+of run time, save a screenshot of the display widget to
+.IR path ,
+then quit.
+.TP
+.BI \-\-soak " frames:path"
+Run for
+.I frames
+frames with audio output muted, take a SHA-256 hash of the final
+framebuffer, write the hex digest to
+.IR path ,
+and exit. Used for CI determinism gating.
+.TP
+.BI \-\-save\-state\-at " seconds:path"
+After
+.IR seconds ,
+save the current emulator state to
+.IR path .
+.TP
+.BI \-\-load\-state " file"
+Load
+.I file
+as a save state at startup (after kernel ROMs are registered, before
+ColdReset).
+.TP
+.BI \-\-save\-state\-roundtrip " path"
+Save state, load it back, save again, and compare the two saved blobs
+byte-for-byte. Exits 0 on match, 1 on mismatch. Used as a CI gate for
+state-format stability.
+.TP
+.B \-\-run-anyway
+Resume the simulator after ColdReset. The emulator runs the boot
+sequence and renders frames; without
+.B \-\-run-anyway
+it stays paused after ColdReset (smoke-test mode).
+.SH KEYBOARD
+.TS
+l l.
+F1	Pulse Warp (held)
+F2	Console Start
+F3	Console Select
+F4	Console Option
+F5	Warm Reset; Shift+F5: Cold Reset
+F6	Help (Atari OS scancode)
+F7	Save State; Shift+F7: Load State
+F8	Warp Speed toggle
+F9	Pause
+F11	Quick Save / Full Screen
+F12	Capture Mouse
+Ctrl+Q	Exit
+.TE
+.SH FILES
+.TP
+.I ~/.config/Altirra Qt port/altirraqt.conf
+QSettings — persisted display, audio, system, profile, joystick,
+and per-image settings.
+.SH AUTHOR
+Avery Lee (upstream Altirra) and Ben Booth (Qt port).
+.SH SEE ALSO
+.UR https://www.virtualdub.org/altirra.html
+Upstream Altirra
+.UE

@@ -1,0 +1,21 @@
+<!--
+  Embedded Altirra ROM resources. Paths are configured at build time by
+  CMake (configure_file) to point at the MADS-built blobs in the build tree.
+  Accessed by qtoshelper's ATLoadKernelResource() via the /altirra/roms
+  resource prefix.
+-->
+<RCC>
+    <qresource prefix="/altirra/roms">
+        <file alias="kernel.rom">@KERNEL_BUILD_DIR@/kernel.rom</file>
+        <file alias="kernelxl.rom">@KERNEL_BUILD_DIR@/kernelxl.rom</file>
+        <file alias="kernel816.rom">@KERNEL_BUILD_DIR@/kernel816.rom</file>
+        <file alias="nokernel.rom">@KERNEL_BUILD_DIR@/nokernel.rom</file>
+        <file alias="superkernel.rom">@KERNEL_BUILD_DIR@/superkernel.rom</file>
+        <file alias="nocartridge.rom">@KERNEL_BUILD_DIR@/nocartridge.rom</file>
+        <file alias="nohdbios.rom">@KERNEL_BUILD_DIR@/nohdbios.rom</file>
+        <file alias="nogame.rom">@KERNEL_BUILD_DIR@/nogame.rom</file>
+        <file alias="nomio.rom">@KERNEL_BUILD_DIR@/nomio.rom</file>
+        <file alias="noblackbox.rom">@KERNEL_BUILD_DIR@/noblackbox.rom</file>
+        <file alias="atbasic.bin">@ATBASIC_BUILD_DIR@/atbasic.bin</file>
+    </qresource>
+</RCC>

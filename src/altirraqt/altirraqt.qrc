@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/altirraqt">
+    <file alias="icon.png">../../data/icons/altirraqt.png</file>
+  </qresource>
+</RCC>

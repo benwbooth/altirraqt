@@ -1,0 +1,16 @@
+# Build artifacts
+/build/
+/outputs/
+
+# Editor / OS detritus
+*~
+*.swp
+.DS_Store
+
+# Nix / direnv caches
+/.direnv/
+/result
+/result-*
+
+# Per-user Claude Code settings (allowlist, hook registrations)
+/.claude/settings.local.json
