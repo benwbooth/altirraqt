@@ -38,8 +38,8 @@ add_library(atcore STATIC
     $<$<OR:$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>,$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},AMD64>>:source/checksum_intrin.cpp>
     $<$<OR:$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>,$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},AMD64>>:source/fft_sse2.cpp>
     $<$<OR:$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>,$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},AMD64>>:source/fft_avx2.cpp>
-    $<$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},aarch64>:source/checksum_arm64.cpp>
-    $<$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},aarch64>:source/fft_neon.cpp>
+    $<$<OR:$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},aarch64>,$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},arm64>>:source/checksum_arm64.cpp>
+    $<$<OR:$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},aarch64>,$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},arm64>>:source/fft_neon.cpp>
     # timerserviceimpl_win32.cpp is Win32-only; replacement POSIX version pending.
 )
 
