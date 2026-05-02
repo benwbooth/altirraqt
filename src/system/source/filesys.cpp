@@ -568,6 +568,9 @@ VDStringW VDFileResolvePath(const wchar_t *basePath, const wchar_t *pathToResolv
 #include <sys/types.h>
 #include <unistd.h>
 #include <utime.h>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 
 static constexpr uint64 kWin32EpochToUnixTicks_Filesys = 116444736000000000ull;
 
@@ -759,8 +762,13 @@ VDStringW VDGetProgramFilePath() {
 	char buf[PATH_MAX];
 #if defined(__APPLE__)
 	uint32_t size = sizeof buf;
-	// _NSGetExecutablePath on macOS; for now throw — Linux-first port.
-	throw VDException("VDGetProgramFilePath not implemented on this platform");
+	if (_NSGetExecutablePath(buf, &size) != 0)
+		throw VDException("Unable to get program path: buffer too small (%u)", size);
+	// Resolve symlinks / relative components for a canonical path.
+	char real[PATH_MAX];
+	if (realpath(buf, real))
+		return widen_path(real);
+	return widen_path(buf);
 #else
 	ssize_t len = readlink("/proc/self/exe", buf, sizeof buf - 1);
 	if (len < 0)
