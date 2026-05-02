@@ -51,6 +51,11 @@ modules:
             /app/share/applications/com.virtualdub.altirraqt.desktop
       - mv /app/share/icons/hicolor/256x256/apps/altirraqt.png
            /app/share/icons/hicolor/256x256/apps/com.virtualdub.altirraqt.png
+      # appstreamcli compose (run by flatpak-builder) reads metainfo and
+      # follows <launchable> to find the .desktop, then resolves Icon=.
+      # Update the launchable id to match the renamed .desktop file.
+      - sed -i 's|>altirraqt.desktop<|>com.virtualdub.altirraqt.desktop<|'
+            /app/share/metainfo/com.virtualdub.altirraqt.metainfo.xml
     cleanup:
       - /include
       - /lib/cmake
