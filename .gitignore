@@ -31,3 +31,4 @@
 
 # Per-user Claude Code settings (allowlist, hook registrations)
 /.claude/settings.local.json
+/.claude/scheduled_tasks.lock

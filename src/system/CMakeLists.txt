@@ -13,7 +13,7 @@ add_library(vd2_system STATIC
     source/constexpr.cpp
     source/date.cpp
     source/debug.cpp
-    source/Error.cpp
+    source/error.cpp
     source/error_qt.cpp
     source/file.cpp
     source/filestream.cpp
