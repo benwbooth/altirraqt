@@ -18,7 +18,9 @@
 #include <vd2/system/vdtypes.h>
 
 #ifdef VD_CPU_ARM64
+#if defined(_WIN32)
 #include <intrin.h>
+#endif
 #include <arm_neon.h>
 #include <vd2/system/cpuaccel.h>
 #include <vd2/Kasumi/resample_kernels.h>

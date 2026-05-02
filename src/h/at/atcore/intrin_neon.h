@@ -22,7 +22,9 @@
 #ifndef f_AT_ATCORE_INTRIN_NEON_H
 #define f_AT_ATCORE_INTRIN_NEON_H
 
+#if defined(_WIN32)
 #include <intrin.h>
+#endif
 #include <arm_neon.h>
 
 inline void ATMaskedWrite_NEON(uint8x16_t src, uint8x16_t mask, void *dstp) {
