@@ -154,7 +154,7 @@ void ATSaveStateRTime8::Exchange(T& ex) {
 	ex.Transfer("address", &mAddress);
 	ex.Transfer("phase", &mPhase);
 
-	if constexpr (ex.IsReader) {
+	if constexpr (std::remove_reference_t<decltype(ex)>::IsReader) {
 		mAddress &= 0x0f;
 
 		if (mPhase >= 3)

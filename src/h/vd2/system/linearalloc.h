@@ -3,6 +3,7 @@
 
 #include <vd2/system/vdtypes.h>
 #include <new>
+#include <type_traits>
 
 class VDLinearAllocator {
 	VDLinearAllocator(const VDLinearAllocator&) = delete;

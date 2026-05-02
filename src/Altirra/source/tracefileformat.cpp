@@ -76,7 +76,7 @@ void ATSavedTraceFrameChannelDetail::FrameBoundaryInfo::Exchange(T_Self& self, T
 	rw.Transfer("period", &self.mPeriod);
 	rw.Transfer("count", &self.mCount);
 
-	if constexpr(rw.IsReader) {
+	if constexpr(std::remove_reference_t<decltype(rw)>::IsReader) {
 		if (self.mCount == 0 || self.mPeriod == 0)
 			throw ATInvalidSaveStateException();
 	}
@@ -87,7 +87,7 @@ void ATSavedTraceFrameChannelDetail::Exchange(T& rw) {
 	rw.Transfer("ticks_per_second", &mTicksPerSecond);
 	rw.Transfer("frame_boundaries", &mFrameBoundaries);
 
-	if constexpr(rw.IsReader) { 
+	if constexpr(std::remove_reference_t<decltype(rw)>::IsReader) { 
 		if (mTicksPerSecond < 1770000.0 || mTicksPerSecond > 1790000.0)
 			throw ATUnsupportedSaveStateException();
 	}
@@ -116,7 +116,7 @@ void ATSavedTraceCPUChannelDetail::Exchange(T& rw) {
 	rw.Transfer("byte_count", &mRowSize);
 	rw.Transfer("blocks", &mBlocks);
 
-	if constexpr(rw.IsReader) {
+	if constexpr(std::remove_reference_t<decltype(rw)>::IsReader) {
 		// stripe must be at least one byte wide
 		if (mRowSize == 0)
 			throw ATInvalidSaveStateException();
@@ -190,7 +190,7 @@ void ATSavedTraceVideoChannelDetail::Exchange(T& rw) {
 	rw.Transfer("frame_buffer_info", &mpFrameBufferInfo);
 	rw.Transfer("frame_buffer_groups", &mFrameBufferGroups);
 
-	if constexpr(rw.IsReader) {
+	if constexpr(std::remove_reference_t<decltype(rw)>::IsReader) {
 		if (!mFrameBuffersPerGroup || mFrameBuffersPerGroup > 65536)
 			throw ATInvalidSaveStateException();
 	}
