@@ -135,7 +135,7 @@ public:
 		uint32 arg1 = 0;
 		uint32 arg2 = 0;
 
-		if constexpr (rw.IsWriter) {
+		if constexpr (std::remove_reference_t<decltype(rw)>::IsWriter) {
 			stepType = mStep.mType;
 			arg1 = 0;
 			arg2 = 0;

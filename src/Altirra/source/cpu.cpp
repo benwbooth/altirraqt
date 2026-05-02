@@ -908,7 +908,7 @@ public:
 		rw.Transfer("int_data", &mData);
 		rw.Transfer("int_data16", &mData16);
 
-		if constexpr (!rw.IsWriter) {
+		if constexpr (!std::remove_reference_t<decltype(rw)>::IsWriter) {
 			if (mCurrentExtOpcode >= ATCPUEmulator::kNumExtOpcodes)
 				throw ATInvalidSaveStateException();
 		}
