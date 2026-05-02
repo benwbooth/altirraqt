@@ -25,6 +25,7 @@
 #include <arm_neon.h>
 #if !VD_COMPILER_MSVC
 #include <arm_acle.h>
+static inline uint32 _byteswap_ulong(uint32 v) { return __builtin_bswap32(v); }
 #endif
 #endif
 
