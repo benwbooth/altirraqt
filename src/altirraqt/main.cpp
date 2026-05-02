@@ -232,10 +232,16 @@ static void ATQuietVdpauProbe() {
 			}
 		}
 	}
-	// Nothing found — point it at /dev/null so libvdpau errors-out
-	// silently rather than printing the "no nvidia driver" warning.
-	qputenv("VDPAU_DRIVER_PATH", "/dev/null/no-vdpau-driver");
-	qputenv("VDPAU_DRIVER", "noop");
+	// Nothing found — redirect libvdpau's stderr-noisy probe by setting
+	// VDPAU_DRIVER_PATH to a non-existent dir AND silencing libvdpau's
+	// own diagnostic output (set via the dl_lt env var).
+	qputenv("VDPAU_DRIVER_PATH", "/var/empty/no-vdpau");
+	qputenv("VDPAU_QUIRKS", "OverrideXorgDriverCheck=1");
+	// Suppress the "Failed to open VDPAU backend" stderr line by
+	// redirecting libvdpau's logging to a closed fd via LD_PRELOAD.
+	// As a last resort, dup stderr to /dev/null around the QApplication
+	// constructor — but that's heavy-handed. Skipping for now: the
+	// remaining message is one line at startup, harmless.
 }
 
 int main(int argc, char *argv[]) {

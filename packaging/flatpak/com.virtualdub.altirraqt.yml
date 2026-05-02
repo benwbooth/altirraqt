@@ -17,6 +17,22 @@ finish-args:
   # Persistent QSettings storage:
   - --persist=.config
 
+# NOTE: this manifest is a work in progress. The build needs:
+#   * MADS (Free Pascal cross-assembler) — not in the KDE 6.7 SDK,
+#     which lacks `fpc`. Workaround options: ship MADS as a binary
+#     extra-data, or pre-build the AltirraOS / Altirra BASIC ROMs on
+#     the host and skip MADS in the CMake build.
+#   * Clang — the codebase uses Clang inline-asm intrinsics
+#     (vdasm_uint128_*) that GCC 13 (the SDK's default) doesn't
+#     understand. The fix is to add `org.freedesktop.Sdk.Extension.llvm17`
+#     (or newer) to `sdk-extensions:` and set CC/CXX to the Clang it
+#     installs.
+#
+# The AppImage build (tools/build-appimage.sh) wraps the Nix-built
+# derivation directly and works today without these constraints, so
+# it's the recommended distribution path until this manifest catches
+# up.
+
 modules:
   - name: altirraqt
     buildsystem: cmake-ninja

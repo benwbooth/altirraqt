@@ -1,6 +1,17 @@
 # Build artifacts
 /build/
+/build-appimage/
+/build-flatpak/
+/dist/
 /outputs/
+/result
+/result-*
+
+# nix-appimage symlink
+/altirraqt.AppImage
+
+# Cached download tools (linuxdeploy etc.)
+/tools/cache/
 
 # Editor / OS detritus
 *~

@@ -22,10 +22,20 @@ mkdir -p "$DIST"
 
 VERSION="$(git -C "$ROOT" describe --tags --always 2>/dev/null || echo dev)"
 
-if ! command -v flatpak-builder >/dev/null 2>&1; then
-    echo "flatpak-builder not found on PATH." >&2
-    echo "Install via: flatpak install flathub org.flatpak.Builder" >&2
-    echo "  (or via your distro's flatpak-builder package)." >&2
+# Resolve flatpak-builder: prefer the native binary on PATH, fall back
+# to the Flatpak app `org.flatpak.Builder` (which is how it's installed
+# on NixOS / immutable distros).
+FLATPAK_BUILDER=()
+if command -v flatpak-builder >/dev/null 2>&1; then
+    FLATPAK_BUILDER=(flatpak-builder)
+elif flatpak --user info org.flatpak.Builder >/dev/null 2>&1 \
+  || flatpak       info org.flatpak.Builder >/dev/null 2>&1; then
+    FLATPAK_BUILDER=(flatpak run org.flatpak.Builder)
+else
+    echo "flatpak-builder not found." >&2
+    echo "Install one of:" >&2
+    echo "  - your distro's flatpak-builder package, or" >&2
+    echo "  - flatpak install flathub org.flatpak.Builder" >&2
     exit 2
 fi
 
@@ -35,8 +45,8 @@ flatpak --user remote-add --if-not-exists \
 flatpak --user install -y flathub \
     org.kde.Platform//6.7 org.kde.Sdk//6.7
 
-echo "=== flatpak-builder ==="
-flatpak-builder \
+echo "=== flatpak-builder (${FLATPAK_BUILDER[*]}) ==="
+"${FLATPAK_BUILDER[@]}" \
     --user --install-deps-from=flathub \
     --force-clean \
     --repo="$REPO" \
@@ -45,7 +55,7 @@ flatpak-builder \
 
 OUT="${DIST}/altirraqt-${VERSION}.flatpak"
 echo "=== flatpak bundle ==="
-flatpak build-bundle "$REPO" "$OUT" "$APPID"
+flatpak --user build-bundle "$REPO" "$OUT" "$APPID"
 
 echo
 echo "Flatpak written to: $OUT"

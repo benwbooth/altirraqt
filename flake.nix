@@ -71,7 +71,7 @@
             qt6.qtwayland
           ];
         in {
-          default = pkgs.stdenv.mkDerivation {
+          default = pkgs.clangStdenv.mkDerivation {
             pname = "altirraqt";
             version = "0.1.0";
             src = cleanSource;
@@ -81,12 +81,13 @@
               ninja
               pkg-config
               qt6.wrapQtAppsHook
+              (madsFor pkgs)
             ];
 
             buildInputs = qtRuntimeInputs;
 
             cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+              "-DCMAKE_BUILD_TYPE=Release"
             ];
 
             meta = with pkgs.lib; {
