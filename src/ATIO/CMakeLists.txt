@@ -36,7 +36,7 @@ add_library(atio STATIC
     source/vorbismisc.cpp
     source/wav.cpp
     $<$<OR:$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>,$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},AMD64>>:source/audioreaderflac_x86.cpp>
-    $<$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},aarch64>:source/audioreaderflac_arm64.cpp>
+    $<$<OR:$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},aarch64>,$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},arm64>>:source/audioreaderflac_arm64.cpp>
 )
 
 target_include_directories(atio
