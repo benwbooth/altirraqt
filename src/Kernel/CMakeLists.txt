@@ -2,9 +2,20 @@
 # Tomasz Biela's MADS cross-assembler. Each rule turns a `.s`/`.xasm` source
 # tree into a binary `.rom` blob. The blobs are then wrapped into a Qt
 # resource file and consumed by qtoshelper's ATLoadKernelResource.
+#
+# When -DPREBUILT_KERNEL_ROMS_DIR=<path> is passed (or the
+# PREBUILT_KERNEL_ROMS_DIR env var is set), cmake skips MADS entirely and
+# copies the pre-built `.rom` blobs from that directory. Used by the
+# Flatpak build (where the SDK has neither MADS nor `fpc` to build it).
 
-find_program(MADS mads REQUIRED
-    DOC "Mad-Assembler (6502/65816 cross-assembler) — used to build Atari kernel ROMs from source")
+if(DEFINED ENV{PREBUILT_KERNEL_ROMS_DIR} AND NOT PREBUILT_KERNEL_ROMS_DIR)
+    set(PREBUILT_KERNEL_ROMS_DIR "$ENV{PREBUILT_KERNEL_ROMS_DIR}")
+endif()
+
+if(NOT PREBUILT_KERNEL_ROMS_DIR)
+    find_program(MADS mads REQUIRED
+        DOC "Mad-Assembler (6502/65816 cross-assembler) — used to build Atari kernel ROMs from source")
+endif()
 
 set(KERNEL_SHARED   ${CMAKE_CURRENT_SOURCE_DIR}/source/Shared)
 set(KERNEL_AUTOGEN  ${CMAKE_CURRENT_SOURCE_DIR}/autobuild)
@@ -21,18 +32,32 @@ file(MAKE_DIRECTORY ${KERNEL_OUT_DIR})
 #   ARGN     - extra mads flags
 function(at_mads tag src out)
     set(dst ${KERNEL_OUT_DIR}/${out})
-    add_custom_command(
-        OUTPUT ${dst}
-        COMMAND ${MADS}
-            -i:${KERNEL_SHARED}
-            -i:${KERNEL_AUTOGEN}
-            -i:${KERNEL_VERSIONH}
-            ${ARGN}
-            -o:${dst}
-            ${CMAKE_CURRENT_SOURCE_DIR}/${src}
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src}
-        COMMENT "MADS ${out}"
-    )
+    if(PREBUILT_KERNEL_ROMS_DIR)
+        # Copy from the supplied prebuilt directory.
+        set(prebuilt "${PREBUILT_KERNEL_ROMS_DIR}/${out}")
+        if(NOT EXISTS "${prebuilt}")
+            message(FATAL_ERROR "PREBUILT_KERNEL_ROMS_DIR=${PREBUILT_KERNEL_ROMS_DIR} is missing ${out}")
+        endif()
+        add_custom_command(
+            OUTPUT ${dst}
+            COMMAND ${CMAKE_COMMAND} -E copy "${prebuilt}" "${dst}"
+            DEPENDS "${prebuilt}"
+            COMMENT "Copy prebuilt ROM ${out}"
+        )
+    else()
+        add_custom_command(
+            OUTPUT ${dst}
+            COMMAND ${MADS}
+                -i:${KERNEL_SHARED}
+                -i:${KERNEL_AUTOGEN}
+                -i:${KERNEL_VERSIONH}
+                ${ARGN}
+                -o:${dst}
+                ${CMAKE_CURRENT_SOURCE_DIR}/${src}
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src}
+            COMMENT "MADS ${out}"
+        )
+    endif()
     set(KERNEL_ROM_${tag} ${dst} PARENT_SCOPE)
     list(APPEND KERNEL_ROM_FILES ${dst})
     set(KERNEL_ROM_FILES ${KERNEL_ROM_FILES} PARENT_SCOPE)

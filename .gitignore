@@ -13,6 +13,12 @@
 # Cached download tools (linuxdeploy etc.)
 /tools/cache/
 
+# Flatpak host-built ROMs staged before flatpak-builder.
+/packaging/flatpak/prebuilt-roms/
+
+# flatpak-builder cache
+/.flatpak-builder/
+
 # Editor / OS detritus
 *~
 *.swp
