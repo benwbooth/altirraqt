@@ -26,8 +26,10 @@
 #include <vd2/system/cpuaccel.h>
 #include <at/atcore/checksum.h>
 #include <at/atcore/internal/checksum.h>
+#if defined(_WIN32)
 #include <intrin.h>
 #include <windows.h>
+#endif
 #include <arm_neon.h>
 
 void ATChecksumUpdateSHA256_NEON(ATChecksumStateSHA256& VDRESTRICT state, const void* src, size_t numBlocks) {
