@@ -203,6 +203,7 @@ uint64 registerFirmware(ATFirmwareManager& fwman, const QString& path,
 	return info.mId;
 }
 
+#if defined(__linux__)
 // libvdpau resolves the driver name from the X server's vendor string,
 // so on a system that reports "NVIDIA Corporation" but doesn't have the
 // proprietary driver installed it tries libvdpau_nvidia.so and prints
@@ -232,17 +233,12 @@ static void ATQuietVdpauProbe() {
 			}
 		}
 	}
-	// Nothing found — redirect libvdpau's stderr-noisy probe by setting
-	// VDPAU_DRIVER_PATH to a non-existent dir AND silencing libvdpau's
-	// own diagnostic output (set via the dl_lt env var).
 	qputenv("VDPAU_DRIVER_PATH", "/var/empty/no-vdpau");
 	qputenv("VDPAU_QUIRKS", "OverrideXorgDriverCheck=1");
-	// Suppress the "Failed to open VDPAU backend" stderr line by
-	// redirecting libvdpau's logging to a closed fd via LD_PRELOAD.
-	// As a last resort, dup stderr to /dev/null around the QApplication
-	// constructor — but that's heavy-handed. Skipping for now: the
-	// remaining message is one line at startup, harmless.
 }
+#else
+static void ATQuietVdpauProbe() {}
+#endif
 
 int main(int argc, char *argv[]) {
 	ATQuietVdpauProbe();
