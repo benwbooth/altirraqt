@@ -185,7 +185,7 @@ struct VDDCsPropKeyView {
 	VDStringSpanA mBaseName;
 	uint32 mCounter = 0;
 
-	constexpr VDDCsPropKeyView() = default;
+	VDDCsPropKeyView() = default;
 
 	explicit VDDCsPropKeyView(VDStringSpanA name);
 
@@ -198,7 +198,7 @@ struct VDDCsPropKeyView {
 	VDDCsPropKeyView(const VDDCsPropKey& key)
 		: mBaseName(key.mBaseName), mCounter(key.mCounter) {}
 
-	constexpr bool operator==(const VDDCsPropKeyView&) const = default;
+	bool operator==(const VDDCsPropKeyView&) const = default;
 
 	VDStringA ToString() const;
 };
