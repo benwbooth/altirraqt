@@ -3,7 +3,7 @@
 qt_add_resources(ALTIRRAQT_RESOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/altirraqt.qrc)
 
-add_executable(altirraqt
+add_executable(altirraqt WIN32 MACOSX_BUNDLE
     ${ALTIRRAQT_RESOURCES}
     main.cpp
     menus.cpp
@@ -59,16 +59,17 @@ target_include_directories(altirraqt
         ${CMAKE_SOURCE_DIR}/src/Altirra/h
 )
 
+# altirra_core, qtoshelper and dita have circular static-archive references.
+# GNU ld / lld need an explicit --start-group/--end-group pass; MSVC link.exe
+# and Apple ld64 already do iterative archive resolution and reject the flag.
 target_link_libraries(altirraqt
     PRIVATE
         qtdisplay
-        # altirra_core, qtoshelper and dita have circular static-archive
-        # references that need a fixpoint resolution pass.
-        "-Wl,--start-group"
+        $<$<NOT:$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:Darwin>>>:-Wl,--start-group>
         altirra_core
         qtoshelper
         dita
-        "-Wl,--end-group"
+        $<$<NOT:$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:Darwin>>>:-Wl,--end-group>
         Qt6::Core
         Qt6::Gui
         Qt6::Widgets
