@@ -20,6 +20,10 @@
 
 #if defined(VD_CPU_ARM64)
 #include <arm_neon.h>
+#if !defined(_MSC_VER)
+#include <bit>
+static inline uint32_t _rotl(uint32_t x, int n) { return std::rotl(x, n); }
+#endif
 
 void ATArtifactNTSCAccum_NEON(void *rout, const void *table, const void *src, uint32 count) {
 	int16x8_t acc0 = vmovq_n_s16(0);
