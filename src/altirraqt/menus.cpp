@@ -306,7 +306,7 @@ void main(){
     c.rgb*=1.0-0.6*gap;
     float colCycle=mod(gl_FragCoord.x,3.0);
     vec3 mask=vec3(colCycle<1.0?1.1:0.85, (colCycle<2.0&&colCycle>=1.0)?1.1:0.85, colCycle>=2.0?1.1:0.85);
-    c.rgb*=mask; out_color=clamp(c,0.0,1.0);
+    c.rgb*=mask; out_color=vec4(clamp(c.rgb,0.0,1.0),1.0);
 })GLSL"},
 				{"Phosphor",
 R"GLSL(#version 330 core
@@ -317,7 +317,7 @@ uniform float u_scanline; uniform float u_tex_height; uniform float u_sharp_bili
 void main(){ vec4 c=texture(u_tex,v_uv);
     vec4 c1=texture(u_tex,v_uv+vec2(u_texel.x,0.0));
     vec4 c2=texture(u_tex,v_uv-vec2(u_texel.x,0.0));
-    out_color=clamp(0.5*c+0.25*(c1+c2),0.0,1.0);
+    out_color=vec4(clamp((0.5*c+0.25*(c1+c2)).rgb,0.0,1.0),1.0);
 })GLSL"},
 				{"Composite",
 R"GLSL(#version 330 core
@@ -330,7 +330,7 @@ void main(){ vec4 c0=texture(u_tex,v_uv);
     vec4 cr=texture(u_tex,v_uv+vec2(u_texel.x,0.0));
     float Y=dot(c0.rgb,vec3(0.299,0.587,0.114));
     vec3 chroma=0.5*((cl.rgb-dot(cl.rgb,vec3(0.299,0.587,0.114)))+(cr.rgb-dot(cr.rgb,vec3(0.299,0.587,0.114))));
-    out_color=vec4(clamp(vec3(Y)+chroma,0.0,1.0),c0.a);
+    out_color=vec4(clamp(vec3(Y)+chroma,0.0,1.0),1.0);
 })GLSL"},
 				{"Scanline+",
 R"GLSL(#version 330 core
@@ -347,7 +347,7 @@ void main(){ vec4 c=texture(u_tex,v_uv);
         vec4 nr=texture(u_tex,v_uv+vec2(u_texel.x,0.0));
         c.rgb=mix(c.rgb,c.rgb+0.4*(nl.rgb+nr.rgb),0.4);
     }
-    out_color=clamp(c,0.0,1.0);
+    out_color=vec4(clamp(c.rgb,0.0,1.0),1.0);
 })GLSL"},
 			};
 			for (const auto& b : kBuiltins) {
@@ -1282,7 +1282,7 @@ void main() {
                      colCycle < 2.0 && colCycle >= 1.0 ? 1.1 : 0.85,
                      colCycle >= 2.0 ? 1.1 : 0.85);
     c.rgb *= mask;
-    out_color = clamp(c, 0.0, 1.0);
+    out_color = vec4(clamp(c.rgb, 0.0, 1.0), 1.0);
 }
 )GLSL";
 		static constexpr const char *kPresetPhosphor = R"GLSL(#version 330 core
@@ -1299,7 +1299,7 @@ void main() {
     vec4 c1 = texture(u_tex, v_uv + vec2( u_texel.x, 0.0));
     vec4 c2 = texture(u_tex, v_uv + vec2(-u_texel.x, 0.0));
     vec4 g  = 0.5 * c + 0.25 * (c1 + c2); // gentle phosphor smear
-    out_color = clamp(g, 0.0, 1.0);
+    out_color = vec4(clamp(g.rgb, 0.0, 1.0), 1.0);
 }
 )GLSL";
 		static constexpr const char *kPresetComposite = R"GLSL(#version 330 core
@@ -1321,7 +1321,7 @@ void main() {
     vec3 chromaL = cl.rgb - dot(cl.rgb, vec3(0.299, 0.587, 0.114));
     vec3 chromaR = cr.rgb - dot(cr.rgb, vec3(0.299, 0.587, 0.114));
     vec3 chroma = 0.5 * (chromaL + chromaR);
-    out_color = vec4(clamp(vec3(Y) + chroma, 0.0, 1.0), c0.a);
+    out_color = vec4(clamp(vec3(Y) + chroma, 0.0, 1.0), 1.0);
 }
 )GLSL";
 		static constexpr const char *kPresetScanlinePlus = R"GLSL(#version 330 core
@@ -1345,7 +1345,7 @@ void main() {
         vec4 nr = texture(u_tex, v_uv + vec2(u_texel.x, 0.0));
         c.rgb = mix(c.rgb, c.rgb + 0.4 * (nl.rgb + nr.rgb), 0.4);
     }
-    out_color = clamp(c, 0.0, 1.0);
+    out_color = vec4(clamp(c.rgb, 0.0, 1.0), 1.0);
 }
 )GLSL";
 		static const Preset kPresets[] = {

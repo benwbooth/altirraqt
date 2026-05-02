@@ -203,7 +203,43 @@ uint64 registerFirmware(ATFirmwareManager& fwman, const QString& path,
 	return info.mId;
 }
 
+// libvdpau resolves the driver name from the X server's vendor string,
+// so on a system that reports "NVIDIA Corporation" but doesn't have the
+// proprietary driver installed it tries libvdpau_nvidia.so and prints
+// "Failed to open VDPAU backend ..." to stderr before falling back. The
+// warning is harmless (we don't actually use VDPAU) but noisy. If the
+// user hasn't already set VDPAU_DRIVER, point it at the first existing
+// mesa VDPAU driver we can find.
+static void ATQuietVdpauProbe() {
+	if (qEnvironmentVariableIsSet("VDPAU_DRIVER"))
+		return;
+	static constexpr const char *kSearch[] = {
+		"/run/opengl-driver/lib/vdpau",  // NixOS / Nix
+		"/usr/lib/vdpau",
+		"/usr/lib/x86_64-linux-gnu/vdpau",
+		"/usr/lib64/vdpau",
+	};
+	static constexpr const char *kPick[] = {
+		"va_gl", "radeonsi", "nouveau", "r600", "virtio_gpu", "d3d12",
+	};
+	for (const char *dir : kSearch) {
+		for (const char *drv : kPick) {
+			const QString path = QStringLiteral("%1/libvdpau_%2.so")
+				.arg(QString::fromUtf8(dir), QString::fromUtf8(drv));
+			if (QFile::exists(path)) {
+				qputenv("VDPAU_DRIVER", drv);
+				return;
+			}
+		}
+	}
+	// Nothing found — point it at /dev/null so libvdpau errors-out
+	// silently rather than printing the "no nvidia driver" warning.
+	qputenv("VDPAU_DRIVER_PATH", "/dev/null/no-vdpau-driver");
+	qputenv("VDPAU_DRIVER", "noop");
+}
+
 int main(int argc, char *argv[]) {
+	ATQuietVdpauProbe();
 	QApplication app(argc, argv);
 	app.setOrganizationName(QStringLiteral("Altirra Qt port"));
 	app.setApplicationName(QStringLiteral("altirraqt"));
@@ -320,7 +356,11 @@ int main(int argc, char *argv[]) {
 	if (settings.contains(QStringLiteral("window/geometry"))) {
 		window.restoreGeometry(settings.value(QStringLiteral("window/geometry")).toByteArray());
 	} else {
-		window.resize(640 + 4, 480 + window.menuBar()->sizeHint().height() + 4);
+		// Default to a comfortable 3x integer scale of the Atari NTSC
+		// visible area (336x240 normal overscan, PAR ~7/6) plus chrome.
+		// 960x720 lands on a typical 1080p screen with room to spare.
+		window.resize(960, 720 + window.menuBar()->sizeHint().height()
+		                    + window.statusBar()->sizeHint().height());
 	}
 
 	QWidget *display = ATCreateQtVideoDisplay(&window);
@@ -834,10 +874,15 @@ int main(int argc, char *argv[]) {
 		uint8 scan = (uint8)(sc & 0xFF);
 		if (ctrl) scan |= 0x80;
 
+		// IMPORTANT: per-key release (not ReleaseAllRawKeys), so the
+		// queued keyboard IRQ from the just-pushed press isn't cleared
+		// before the CPU has a chance to see it. ReleaseAllRawKeys
+		// stomps mbKeyboardIRQPending; ReleaseRawKey only touches the
+		// matrix.
 		if (pressed)
 			pokey.PushRawKey(scan, /*immediate=*/true);
 		else
-			pokey.ReleaseAllRawKeys(/*immediate=*/true);
+			pokey.ReleaseRawKey(scan, /*immediate=*/true);
 	});
 
 	// Mouse → paddles on port 1. Cursor X drives paddle A's pot, Y drives
@@ -859,29 +904,56 @@ int main(int argc, char *argv[]) {
 			if (button == 1) { pb->SetTrigger(pressed); *hudPadTB = pressed; }
 		});
 
-	// Drive the simulator from the Qt event loop. Advance() runs the
-	// emulator until either a frame completes or it's blocked waiting for
-	// the display. We drain Advance every tick until it stops returning
-	// kAdvanceResult_Running so each timer fire produces real output.
+	// Drive the simulator paced to wall-clock. Each timer tick runs the
+	// simulator only until ANTIC's frame counter has advanced by one
+	// (one Atari frame produced) or we've burned enough real time that
+	// continuing would put us ahead of the next NTSC/PAL deadline.
+	// Turbo mode bypasses the deadline.
 	QTimer timer(display);
-	timer.setInterval(0);
+	timer.setSingleShot(true);
 	auto frameStart = std::make_shared<qint64>(QDateTime::currentMSecsSinceEpoch());
 	auto frameCount = std::make_shared<int>(0);
+	auto deadlineMs = std::make_shared<qint64>(QDateTime::currentMSecsSinceEpoch());
 	g_atShowFps = settings.value(QStringLiteral("view/showFps"), false).toBool();
 	QObject::connect(&timer, &QTimer::timeout, display,
-		[sim = sim.get(), frameStart, frameCount, &window, hudFps]{
+		[sim = sim.get(), frameStart, frameCount, deadlineMs, &timer, &window, hudFps]{
+		const bool turbo = sim->IsTurboModeEnabled();
+		const double targetHz = sim->IsVideo50Hz() ? 50.0 : 59.94;
+		const double frameMs  = 1000.0 / targetHz;
+
+		// Run the simulator until ANTIC's frame counter ticks (= one
+		// Atari frame produced) or Stop. Cap loop iterations defensively.
+		const uint32 startFrame = sim->GetAntic().GetRawFrameCounter();
 		int framesAdvanced = 0;
-		for (int guard = 0; guard < 256; ++guard) {
+		for (int guard = 0; guard < 50000; ++guard) {
 			const auto r = sim->Advance(/*dropFrame=*/false);
-			if (r == ATSimulator::kAdvanceResult_WaitingForFrame)
+			if (r == ATSimulator::kAdvanceResult_WaitingForFrame) {
 				++framesAdvanced;
-			if (r != ATSimulator::kAdvanceResult_Running)
 				break;
+			}
+			if (r != ATSimulator::kAdvanceResult_Running) break;
+			// Detect natural end-of-frame: ANTIC frame counter ticked.
+			if (sim->GetAntic().GetRawFrameCounter() != startFrame) {
+				++framesAdvanced;
+				break;
+			}
 		}
+
+		// Schedule next tick at the next frame deadline. If we're way
+		// behind real-time (e.g. just resumed from a breakpoint), snap
+		// to "now" so we don't burst-catch-up.
+		const qint64 now = QDateTime::currentMSecsSinceEpoch();
+		if (turbo) {
+			*deadlineMs = now;
+		} else {
+			*deadlineMs += (qint64)frameMs;
+			if (*deadlineMs < now - 100) *deadlineMs = now;
+		}
+		const qint64 delay = std::max<qint64>(0, *deadlineMs - now);
+		timer.start((int)delay);
 		// Measure FPS continuously so the HUD overlay always has a fresh
 		// number; the title bar update is gated on g_atShowFps.
 		*frameCount += framesAdvanced;
-		const qint64 now = QDateTime::currentMSecsSinceEpoch();
 		const qint64 elapsed = now - *frameStart;
 		if (elapsed >= 500) {
 			const double fps = *frameCount * 1000.0 / (double)elapsed;
@@ -892,7 +964,8 @@ int main(int argc, char *argv[]) {
 			*frameCount = 0;
 		}
 	});
-	timer.start();
+	*deadlineMs = QDateTime::currentMSecsSinceEpoch();
+	timer.start(0);
 
 	if (parser.isSet(typeOpt)) {
 		const QString text = parser.value(typeOpt);

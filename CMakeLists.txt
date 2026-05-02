@@ -39,3 +39,9 @@ install(FILES data/icons/altirraqt.png
 
 install(FILES data/man/altirraqt.1
     DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+
+install(FILES data/metainfo/com.virtualdub.altirraqt.metainfo.xml
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/metainfo)
+
+install(FILES LICENSE AUTHORS
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/altirraqt)

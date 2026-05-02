@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.virtualdub.altirraqt</id>
+  <name>altirraqt</name>
+  <summary>Atari 8-bit emulator (Qt port of Altirra)</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+
+  <description>
+    <p>
+      altirraqt is a Linux/Qt6 port of Avery Lee's Altirra, an
+      accurate emulator of the Atari 800 / 800XL / 130XE / 5200 home
+      computers and game console. It runs disk images (ATR, XEX,
+      ATX), cartridge ROMs (CAR, BIN, A52), and cassette tapes (CAS,
+      WAV) with cycle-accurate ANTIC, GTIA and POKEY emulation, a
+      full debugger, hardware compatibility database, and a
+      configurable HUD.
+    </p>
+    <p>
+      The bundled AltirraOS kernel and Altirra BASIC ROMs are
+      provided under a permissive BSD license so the emulator works
+      out of the box without needing the original Atari ROMs.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">altirraqt.desktop</launchable>
+
+  <url type="homepage">https://github.com/benwbooth/altirraqt</url>
+  <url type="bugtracker">https://github.com/benwbooth/altirraqt/issues</url>
+  <url type="vcs-browser">https://github.com/benwbooth/altirraqt</url>
+
+  <developer id="com.github.benwbooth">
+    <name>Ben Booth</name>
+  </developer>
+
+  <provides>
+    <binary>altirraqt</binary>
+  </provides>
+
+  <categories>
+    <category>Game</category>
+    <category>Emulator</category>
+  </categories>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.1.0" date="2026-05-02">
+      <description>
+        <p>Initial release of the Qt port.</p>
+      </description>
+    </release>
+  </releases>
+</component>

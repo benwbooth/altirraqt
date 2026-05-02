@@ -1,0 +1,16 @@
+altirraqt — Qt port of Altirra (Atari 8-bit emulator)
+
+Avery Lee
+    The original Altirra emulator (Win32) — copyright (C) 2009–present.
+    Source: https://www.virtualdub.org/altirra.html
+
+Ben Booth <benwbooth@gmail.com>
+    Qt port — copyright (C) 2026.
+    Source: https://github.com/benwbooth/altirraqt
+
+Both works are distributed under the GNU General Public License version 2
+or any later version. See LICENSE for the full text.
+
+The bundled AltirraOS (kernel/BASIC ROMs cross-built from `src/Kernel`
+and `src/ATBasic`) is licensed under a permissive BSD license by Avery
+Lee and is included verbatim from the upstream tree.

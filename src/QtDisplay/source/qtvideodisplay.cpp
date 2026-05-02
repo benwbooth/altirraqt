@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <deque>
@@ -341,7 +342,11 @@ void main() {
         float gap = abs(2.0 * fract(row) - 1.0);
         c.rgb *= 1.0 - u_scanline * gap;
     }
-    out_color = clamp(c, 0.0, 1.0);
+    // Force opaque alpha — the source XRGB8888 texture's X byte isn't
+    // guaranteed to be 0xff after VDPixmapBlt, and the host compositor
+    // honours QOpenGLWidget's framebuffer alpha. Without this the window
+    // appears transparent to the desktop behind it.
+    out_color = vec4(clamp(c.rgb, 0.0, 1.0), 1.0);
 }
 )";
 
@@ -453,10 +458,7 @@ void ATQtVideoDisplay::PostBuffer(VDVideoDisplayFrame *frame) {
 bool ATQtVideoDisplay::RevokeBuffer(bool, VDVideoDisplayFrame **ppFrame) {
 	if (!ppFrame) return false;
 	std::lock_guard<std::mutex> lock(mFrameMutex);
-	if (mFramePool.empty()) {
-		*ppFrame = nullptr;
-		return false;
-	}
+	if (mFramePool.empty()) { *ppFrame = nullptr; return false; }
 	*ppFrame = mFramePool.front();
 	mFramePool.pop_front();
 	return true;
