@@ -18,7 +18,7 @@
 
 #include <stdafx.h>
 #include <vector>
-#include <malloc.h>
+#include <stdlib.h>
 #include <vd2/system/memory.h>
 #include <vd2/system/cpuaccel.h>
 #include <vd2/system/vdstl.h>

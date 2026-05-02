@@ -25,7 +25,7 @@
 
 #include <stdafx.h>
 #include <windows.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <vd2/system/error.h>
 #include <vd2/system/file.h>
 #include <vd2/system/fileasync.h>

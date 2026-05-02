@@ -18,7 +18,7 @@
 #include <stdafx.h>
 #include <windows.h>
 #include <windowsx.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <vd2/Dita/services.h>
 #include <vd2/system/binary.h>
