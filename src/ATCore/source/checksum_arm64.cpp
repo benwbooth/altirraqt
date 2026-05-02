@@ -29,6 +29,9 @@
 #if defined(_WIN32)
 #include <intrin.h>
 #include <windows.h>
+#else
+#include <bit>
+static inline uint32_t _rotr(uint32_t x, int n) { return std::rotr(x, n); }
 #endif
 #include <arm_neon.h>
 
