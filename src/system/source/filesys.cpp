@@ -566,12 +566,17 @@ VDStringW VDFileResolvePath(const wchar_t *basePath, const wchar_t *pathToResolv
 #include <sys/stat.h>
 #if defined(_WIN32)
 #include <windows.h>
+#include <direct.h>      // _mkdir, _rmdir
+#include <io.h>
+#include <sys/utime.h>   // _utime, _utimbuf
 #else
 #include <sys/statvfs.h>
 #endif
 #include <sys/types.h>
 #include <unistd.h>
+#if !defined(_WIN32)
 #include <utime.h>
+#endif
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
 #endif
