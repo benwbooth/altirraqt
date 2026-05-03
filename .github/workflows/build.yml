@@ -238,8 +238,13 @@ jobs:
           # Build the installer.
           VERSION=$(git describe --tags --always 2>/dev/null || echo dev)
           OUT="altirraqt-${VERSION}-windows-x86_64-installer.exe"
-          makensis -DSRCDIR=dist/altirraqt \
-                   -DOUTFILE="$OUT" \
+          # NSIS resolves File-paths relative to the .nsi script's dir, so
+          # pass absolute paths and write the installer next to the staged
+          # tree rather than next to the script.
+          SRCDIR="$(cygpath -w "$(pwd)/dist/altirraqt")"
+          OUTFILE="$(cygpath -w "$(pwd)/$OUT")"
+          makensis -DSRCDIR="$SRCDIR" \
+                   -DOUTFILE="$OUTFILE" \
                    -DAPPVERSION="$VERSION" \
                    packaging/windows/altirraqt.nsi
           ls -lh "$OUT"
