@@ -4,6 +4,10 @@ A Qt6 port of [Altirra](https://www.virtualdub.org/altirra.html) — Avery Lee's
 
 The bundled AltirraOS kernel and Altirra BASIC ROMs are BSD-licensed by Avery Lee and built from source — the emulator works out of the box without needing the original Atari ROMs.
 
+## Caveat: AI-assisted port
+
+This port was produced largely by an LLM (Claude) under human direction — file-by-file translation of the upstream Win32 codebase to Qt6 + POSIX, plus all the cross-platform packaging glue (CMake, Nix flake, Flatpak manifest, GitHub Actions workflow, NSIS installer, AppImage / DMG / Flatpak repo plumbing). It compiles and runs on Linux, macOS arm64, and Windows, and the standard test paths (deterministic framebuffer hash, audio smoke, save-state round-trip across all 39 device classes) pass — but it has not had the kind of long-baked human review that the upstream Altirra codebase enjoys. Treat it as a working but not battle-tested rewrite: report bugs, please don't trust it for archival work, and prefer native [Altirra](https://www.virtualdub.org/altirra.html) on Windows where it already exists.
+
 ## Install
 
 Pre-built bundles are attached to every [release](https://github.com/benwbooth/altirraqt/releases).
