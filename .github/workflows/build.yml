@@ -216,6 +216,7 @@ jobs:
           update: true
           install: >-
             git
+            zip
             mingw-w64-clang-x86_64-clang
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-ninja
@@ -251,23 +252,28 @@ jobs:
             f="/clang64/bin/$dll"
             [ -f "$f" ] && cp "$f" dist/altirraqt/ || true
           done
-          # Build the installer.
           VERSION=$(git describe --tags --always 2>/dev/null || echo dev)
-          OUT="altirraqt-${VERSION}-windows-x86_64-installer.exe"
+          # Portable zip — extract and run, no install needed.
+          ZIP="altirraqt-${VERSION}-windows-x86_64-portable.zip"
+          /usr/bin/zip -r "$ZIP" ./dist/altirraqt
+          # NSIS installer — registers in Add/Remove Programs.
+          INSTALLER="altirraqt-${VERSION}-windows-x86_64-installer.exe"
           # NSIS resolves File-paths relative to the .nsi script's dir, so
           # pass absolute paths and write the installer next to the staged
           # tree rather than next to the script.
           SRCDIR="$(cygpath -w "$(pwd)/dist/altirraqt")"
-          OUTFILE="$(cygpath -w "$(pwd)/$OUT")"
+          OUTFILE="$(cygpath -w "$(pwd)/$INSTALLER")"
           makensis -DSRCDIR="$SRCDIR" \
                    -DOUTFILE="$OUTFILE" \
                    -DAPPVERSION="$VERSION" \
                    packaging/windows/altirraqt.nsi
-          ls -lh "$OUT"
+          ls -lh "$ZIP" "$INSTALLER"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64
-          path: altirraqt-*-windows-x86_64-installer.exe
+          path: |
+            altirraqt-*-windows-x86_64-installer.exe
+            altirraqt-*-windows-x86_64-portable.zip
 
   # -----------------------------------------------------------------------
   # On v* tag pushes, publish the Flatpak OSTree repo to GitHub Pages so
@@ -351,7 +357,8 @@ jobs:
           mkdir -p release-files
           find artifacts -type f \
                \( -name '*.AppImage' -o -name '*.flatpak' \
-                  -o -name '*.dmg' -o -name '*.exe' \) \
+                  -o -name '*.dmg' -o -name '*.exe' \
+                  -o -name '*-portable.zip' \) \
                -exec cp {} release-files/ \;
           ls -lh release-files/
       - name: Attach to release

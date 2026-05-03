@@ -48,9 +48,12 @@ xattr -cr /Applications/altirraqt.app
 
 then double-click as normal.
 
-### Windows — Installer
+### Windows — Installer or portable zip
 
-Run `altirraqt-v*-windows-x86_64-installer.exe`. The installer is unsigned, so SmartScreen will warn — click *More info* → *Run anyway*. Adds Start Menu and desktop shortcuts; uninstall via Add/Remove Programs.
+* `altirraqt-v*-windows-x86_64-installer.exe` — runs once, registers in Add/Remove Programs, adds Start Menu + desktop shortcuts.
+* `altirraqt-v*-windows-x86_64-portable.zip` — extract anywhere and run `altirraqt.exe`; nothing written outside the extracted folder.
+
+Both are unsigned, so SmartScreen will warn on first launch — click *More info* → *Run anyway*.
 
 ## Build from source
 
