@@ -18,7 +18,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#if defined(_WIN32)
+#include <io.h>
+#include <sys/utime.h>
+#else
 #include <utime.h>
+#endif
 #include <wchar.h>
 
 #include <vd2/system/error.h>
@@ -330,7 +335,11 @@ sint64 VDFile::tell() const {
 }
 
 bool VDFile::flushNT() {
+#if defined(_WIN32)
+	return _commit(mhFile) == 0;
+#else
 	return fsync(mhFile) == 0;
+#endif
 }
 
 void VDFile::flush() {
@@ -356,7 +365,9 @@ uint32 VDFile::getAttributes() const {
 
 	uint32 attrs = 0;
 	if (S_ISDIR(st.st_mode))  attrs |= kVDFileAttr_Directory;
+#ifdef S_ISLNK
 	if (S_ISLNK(st.st_mode))  attrs |= kVDFileAttr_Link;
+#endif
 	if (!(st.st_mode & S_IWUSR)) attrs |= kVDFileAttr_ReadOnly;
 	return attrs;
 }
@@ -371,6 +382,8 @@ VDDate VDFile::getCreationTime() const {
 
 #if defined(__APPLE__)
 	return DateFromTimespec(st.st_birthtimespec);
+#elif defined(_WIN32)
+	return DateFromTimespec(timespec{(time_t)st.st_ctime, 0});
 #else
 	// ext4/xfs don't expose birth time through fstat(); fall back to mtime.
 	return DateFromTimespec(st.st_ctim);
@@ -391,6 +404,8 @@ VDDate VDFile::getLastWriteTime() const {
 
 #if defined(__APPLE__)
 	return DateFromTimespec(st.st_mtimespec);
+#elif defined(_WIN32)
+	return DateFromTimespec(timespec{(time_t)st.st_mtime, 0});
 #else
 	return DateFromTimespec(st.st_mtim);
 #endif
@@ -403,17 +418,30 @@ void VDFile::setLastWriteTime(const VDDate& date) {
 	struct timespec times[2];
 	TimespecFromDate(date, times[0]);
 	times[1] = times[0];
+#if defined(_WIN32)
+	struct _utimbuf buf{times[0].tv_sec, times[1].tv_sec};
+	(void)_futime(mhFile, &buf);
+#else
 	(void)futimens(mhFile, times);
+#endif
 }
 
 void *VDFile::AllocUnbuffer(size_t nBytes) {
-	void *p = nullptr;
 	const size_t alignment = 4096;
+#if defined(_WIN32)
+	return _aligned_malloc(nBytes, alignment);
+#else
+	void *p = nullptr;
 	if (posix_memalign(&p, alignment, nBytes) != 0)
 		return nullptr;
 	return p;
+#endif
 }
 
 void VDFile::FreeUnbuffer(void *p) {
+#if defined(_WIN32)
+	_aligned_free(p);
+#else
 	free(p);
+#endif
 }

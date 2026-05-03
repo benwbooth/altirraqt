@@ -78,8 +78,13 @@ VDExpandedDate VDGetLocalDate(const VDDate& date) {
 
 	const time_t secs = (time_t)VDGetDateAsTimeT(date);
 	struct tm lt{};
+#if defined(_WIN32)
+	if (localtime_s(&lt, &secs) != 0)
+		return r;
+#else
 	if (!localtime_r(&secs, &lt))
 		return r;
+#endif
 
 	r.mYear         = (sint16)(lt.tm_year + 1900);
 	r.mMonth        = (uint8)(lt.tm_mon + 1);
