@@ -271,7 +271,11 @@ extern void VDDebugPrint(const char *format, ...);
 #define VDDEBUG2(...)		VDDebugPrint(__VA_ARGS__)
 
 #if !defined(_MSC_VER)
-	#include <alloca.h>
+	#if defined(__MINGW32__) || defined(_WIN32)
+		#include <malloc.h>
+	#else
+		#include <alloca.h>
+	#endif
 	#define _alloca(sz) alloca(sz)
 
 	#if defined(__clang__)
