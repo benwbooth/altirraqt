@@ -22,11 +22,18 @@
 
 #include <pthread.h>
 #include <sched.h>
+#if !defined(_WIN32)
 #include <sys/syscall.h>
+#endif
 #include <unistd.h>
 
 #if defined(__linux__)
 #include <sys/prctl.h>
+#endif
+
+#if defined(_WIN32)
+#include <windows.h>
+#include <process.h>   // _getpid
 #endif
 
 namespace {
@@ -41,6 +48,8 @@ namespace {
 		uint64_t tid = 0;
 		pthread_threadid_np(nullptr, &tid);
 		return (VDThreadID)tid;
+	#elif defined(_WIN32)
+		return (VDThreadID)GetCurrentThreadId();
 	#else
 		return (VDThreadID)(uintptr_t)pthread_self();
 	#endif
