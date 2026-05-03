@@ -29,16 +29,21 @@ VERSION="$(git -C "$ROOT" describe --tags --always 2>/dev/null || echo dev)"
 # The CMakeLists in src/Kernel and src/ATBasic look at the
 # PREBUILT_KERNEL_ROMS_DIR cmake variable / env var — when set, they
 # skip MADS and just copy the supplied .rom blobs.
-echo "=== prebuild kernel + basic ROMs (via Nix dev shell) ==="
-"${ROOT}/tools/build-roms.sh"
-
 mkdir -p "$PREBUILT_ROMS"
-for rom in kernel.rom kernelxl.rom kernel816.rom nokernel.rom \
-           superkernel.rom nocartridge.rom nohdbios.rom nogame.rom \
-           nomio.rom noblackbox.rom; do
-    cp -f "${ROOT}/build/src/Kernel/${rom}" "${PREBUILT_ROMS}/"
-done
-cp -f "${ROOT}/build/src/ATBasic/atbasic.bin" "${PREBUILT_ROMS}/"
+if [[ -n "${PREBUILT_KERNEL_ROMS_DIR:-}" && -f "${PREBUILT_KERNEL_ROMS_DIR}/kernel.rom" ]]; then
+    echo "=== using prebuilt ROMs from $PREBUILT_KERNEL_ROMS_DIR ==="
+    cp -f "${PREBUILT_KERNEL_ROMS_DIR}"/*.rom    "${PREBUILT_ROMS}/"
+    cp -f "${PREBUILT_KERNEL_ROMS_DIR}"/atbasic.bin "${PREBUILT_ROMS}/"
+else
+    echo "=== prebuild kernel + basic ROMs (via Nix dev shell) ==="
+    "${ROOT}/tools/build-roms.sh"
+    for rom in kernel.rom kernelxl.rom kernel816.rom nokernel.rom \
+               superkernel.rom nocartridge.rom nohdbios.rom nogame.rom \
+               nomio.rom noblackbox.rom; do
+        cp -f "${ROOT}/build/src/Kernel/${rom}" "${PREBUILT_ROMS}/"
+    done
+    cp -f "${ROOT}/build/src/ATBasic/atbasic.bin" "${PREBUILT_ROMS}/"
+fi
 ls -la "$PREBUILT_ROMS"
 
 # Resolve flatpak-builder: prefer the native binary on PATH, fall back

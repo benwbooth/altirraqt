@@ -46,22 +46,32 @@ jobs:
           retention-days: 7
 
   # -----------------------------------------------------------------------
-  # Linux: AppImage (via nix-appimage) + Flatpak (via flatpak-builder).
+  # Linux: AppImage (linuxdeploy + plugin-qt; ~100 MB) + Flatpak (KDE 6.10
+  # runtime; ~2 MB). ROMs come from the prebuild-roms artifact, so the
+  # Linux runner doesn't need Nix or MADS.
   # -----------------------------------------------------------------------
   linux:
     needs: prebuild-roms
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v27
+      - uses: actions/download-artifact@v4
         with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - name: Install flatpak / flatpak-builder
+          name: prebuilt-roms
+          path: prebuilt-roms/
+      - name: Install build deps (apt)
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
+          sudo apt-get install -y \
+            cmake ninja-build pkg-config \
+            qt6-base-dev qt6-multimedia-dev qt6-tools-dev \
+            qt6-tools-dev-tools libqt6opengl6-dev \
+            zlib1g-dev \
+            wget file libfuse2t64 \
+            flatpak flatpak-builder
       - name: Build AppImage + Flatpak
+        env:
+          PREBUILT_KERNEL_ROMS_DIR: ${{ github.workspace }}/prebuilt-roms
         run: tools/release.sh
       - name: Inventory
         run: ls -lh dist/
