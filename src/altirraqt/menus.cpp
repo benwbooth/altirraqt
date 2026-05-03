@@ -1732,17 +1732,21 @@ void main() {
 
 	viewMenu->addSeparator();
 
-	// Show FPS — flips a global flag that main.cpp's frame timer checks
-	// and updates the window title with the measured rate. Persists in
-	// QSettings.
+	// Show FPS — flips both the on-screen HUD overlay (top-right text) and
+	// the title-bar suffix in lockstep, persisted in view/showFps. The HUD
+	// overlay is also independently toggleable from Tools → Customize HUD.
 	auto *fpsAction = viewMenu->addAction(QObject::tr("Show FPS"));
 	fpsAction->setCheckable(true);
 	if (ctx.settings)
 		fpsAction->setChecked(ctx.settings->value(QStringLiteral("view/showFps"), false).toBool());
 	QObject::connect(fpsAction, &QAction::triggered, [&ctx](bool on){
 		::g_atShowFps = on;
-		if (ctx.settings)
+		if (ctx.settings) {
 			ctx.settings->setValue(QStringLiteral("view/showFps"), on);
+			ctx.settings->setValue(QStringLiteral("view/hud/fps"), on);
+		}
+		if (ctx.displayWidget)
+			ATQtVideoDisplaySetHudEnabled(ctx.displayWidget, "fps", on);
 		if (!on && ctx.window)
 			ctx.window->setWindowTitle(QStringLiteral("Altirra (Qt port)"));
 	});
