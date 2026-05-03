@@ -1,0 +1,6 @@
+[Flatpak Repo]
+Title=altirraqt
+Url=https://benwbooth.github.io/altirraqt/repo/
+Homepage=https://github.com/benwbooth/altirraqt
+Description=Qt port of Altirra (Atari 8-bit). Self-published; add with --no-gpg-verify.
+NoDeps=false

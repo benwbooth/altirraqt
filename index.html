@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>altirraqt — Flatpak repo</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 3em auto; padding: 0 1em; line-height: 1.5; }
+  code, pre { font-family: ui-monospace, monospace; background: #f4f4f4; padding: .2em .4em; border-radius: 3px; }
+  pre { padding: .8em 1em; overflow-x: auto; white-space: pre; }
+  h1, h2 { margin-top: 1.5em; }
+</style></head><body>
+<h1>altirraqt — Flatpak repo</h1>
+<p>Qt port of <a href="https://www.virtualdub.org/altirra.html">Altirra</a> (Atari 8-bit emulator).
+   Source on <a href="https://github.com/benwbooth/altirraqt">GitHub</a>.</p>
+<h2>Install</h2>
+<pre>flatpak --user remote-add --no-gpg-verify altirraqt \
+    https://benwbooth.github.io/altirraqt/altirraqt.flatpakrepo
+flatpak --user install altirraqt com.virtualdub.altirraqt</pre>
+<p>Update later with <code>flatpak --user update com.virtualdub.altirraqt</code>.</p>
+<h2>Other downloads</h2>
+<p>AppImage and Windows / macOS binaries: <a href="https://github.com/benwbooth/altirraqt/releases/latest">latest GitHub release</a>.</p>
+</body></html>
