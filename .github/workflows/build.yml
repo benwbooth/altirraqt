@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # release job creates / updates GH releases
+  contents: write   # release job creates / updates GH releases + pushes gh-pages
 
 jobs:
 
@@ -46,11 +46,9 @@ jobs:
           retention-days: 7
 
   # -----------------------------------------------------------------------
-  # Linux: AppImage (linuxdeploy + plugin-qt; ~100 MB) + Flatpak (KDE 6.10
-  # runtime; ~2 MB). ROMs come from the prebuild-roms artifact, so the
-  # Linux runner doesn't need Nix or MADS.
+  # AppImage (linuxdeploy + plugin-qt; ~100 MB).
   # -----------------------------------------------------------------------
-  linux:
+  appimage:
     needs: prebuild-roms
     runs-on: ubuntu-latest
     steps:
@@ -65,25 +63,60 @@ jobs:
           sudo apt-get install -y \
             clang \
             cmake ninja-build pkg-config \
-            qt6-base-dev qt6-multimedia-dev qt6-tools-dev \
-            qt6-tools-dev-tools libqt6opengl6-dev \
-            zlib1g-dev \
-            wget file libfuse2t64 \
-            flatpak flatpak-builder
-      - name: Build AppImage + Flatpak
+            zlib1g-dev libgl-dev libegl-dev libxkbcommon-dev \
+            wget file libfuse2t64
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.3'
+          modules: 'qtmultimedia'
+          cache: true
+      - name: Build AppImage
         env:
-          # The codebase has Clang-specific paths (vdasm_uint128 inline asm,
-          # _Pragma fold-expression tricks); GCC won't compile it.
+          # The codebase has Clang-specific inline asm (vdasm_uint128_*);
+          # GCC rejects it.
           CC: clang
           CXX: clang++
           PREBUILT_KERNEL_ROMS_DIR: ${{ github.workspace }}/prebuilt-roms
-        run: tools/release.sh
-      - name: Inventory
-        run: ls -lh dist/
+        run: tools/build-appimage.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-bundles
-          path: dist/*
+          name: linux-appimage
+          path: dist/*.AppImage
+
+  # -----------------------------------------------------------------------
+  # Flatpak (KDE Platform 6.10 runtime; ~2 MB bundle). Also exports the
+  # OSTree repo so the `pages` job can publish it as a Flatpak remote on
+  # tag pushes.
+  # -----------------------------------------------------------------------
+  flatpak:
+    needs: prebuild-roms
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: prebuilt-roms
+          path: prebuilt-roms/
+      - name: Install flatpak / flatpak-builder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+      - name: Build Flatpak
+        env:
+          PREBUILT_KERNEL_ROMS_DIR: ${{ github.workspace }}/prebuilt-roms
+        run: tools/build-flatpak.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-flatpak-bundle
+          path: dist/*.flatpak
+      - name: Pack OSTree repo
+        run: |
+          tar -C build-flatpak -cf flatpak-repo.tar repo
+          ls -lh flatpak-repo.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-repo
+          path: flatpak-repo.tar
 
   # -----------------------------------------------------------------------
   # macOS: matrix of Intel + Apple Silicon. Produces a self-contained .app
@@ -208,12 +241,76 @@ jobs:
           path: altirraqt-windows-x86_64.zip
 
   # -----------------------------------------------------------------------
+  # On v* tag pushes, publish the Flatpak OSTree repo to GitHub Pages so
+  # users can `flatpak --user remote-add --no-gpg-verify altirraqt
+  # https://<user>.github.io/altirraqt/altirraqt.flatpakrepo` and get
+  # auto-updates from `flatpak update`.
+  # -----------------------------------------------------------------------
+  pages:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: flatpak
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flatpak-repo
+          path: .
+      - name: Stage gh-pages content
+        run: |
+          mkdir -p pages-out
+          tar -C pages-out -xf flatpak-repo.tar
+          # Now: pages-out/repo/ holds the OSTree bare-user repo.
+          REPO_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/altirraqt"
+          cat > pages-out/altirraqt.flatpakrepo <<EOF
+          [Flatpak Repo]
+          Title=altirraqt
+          Url=$REPO_URL/repo/
+          Homepage=https://github.com/${GITHUB_REPOSITORY}
+          Description=Qt port of Altirra (Atari 8-bit emulator). Self-published; users add with --no-gpg-verify.
+          NoDeps=false
+          EOF
+          cat > pages-out/index.html <<EOF
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>altirraqt — Flatpak repo</title>
+            <style>
+              body { font-family: system-ui, sans-serif; max-width: 720px; margin: 3em auto; padding: 0 1em; line-height: 1.5; }
+              code, pre { font-family: ui-monospace, monospace; background: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }
+              pre { padding: 0.8em 1em; overflow-x: auto; }
+              h1, h2 { margin-top: 1.5em; }
+            </style>
+          </head>
+          <body>
+            <h1>altirraqt — Flatpak repo</h1>
+            <p>Qt port of <a href="https://www.virtualdub.org/altirra.html">Altirra</a> (Atari 8-bit emulator). Source on <a href="https://github.com/${GITHUB_REPOSITORY}">GitHub</a>.</p>
+            <h2>Install</h2>
+            <pre>flatpak --user remote-add --no-gpg-verify altirraqt \\
+    $REPO_URL/altirraqt.flatpakrepo
+flatpak --user install altirraqt com.virtualdub.altirraqt</pre>
+            <p>Update later with <code>flatpak --user update com.virtualdub.altirraqt</code>.</p>
+            <h2>Other downloads</h2>
+            <p>AppImage and Windows / macOS binaries: <a href="https://github.com/${GITHUB_REPOSITORY}/releases/latest">latest GitHub release</a>.</p>
+          </body>
+          </html>
+          EOF
+          rm -f pages-out/flatpak-repo.tar
+          ls -lR pages-out | head -40
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./pages-out
+          force_orphan: true
+
+  # -----------------------------------------------------------------------
   # On v* tag pushes, attach all platform artifacts to the GH release.
   # If the tag's release already exists, files are uploaded with --clobber.
   # -----------------------------------------------------------------------
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, macos, windows]
+    needs: [appimage, flatpak, macos, windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

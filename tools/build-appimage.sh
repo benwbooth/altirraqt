@@ -27,7 +27,7 @@ ARCH="$(uname -m)"
 VERSION="$(git -C "$ROOT" describe --tags --always 2>/dev/null || echo dev)"
 
 use_linuxdeploy() {
-    command -v qmake6 >/dev/null 2>&1
+    command -v qmake6 >/dev/null 2>&1 || command -v qmake >/dev/null 2>&1
 }
 
 if use_linuxdeploy; then
@@ -65,7 +65,7 @@ if use_linuxdeploy; then
     # 3) Walk Qt deps + write AppImage.
     OUT="${DIST}/altirraqt-${VERSION}-${ARCH}.AppImage"
     rm -f "$OUT"
-    export QMAKE="${QMAKE:-$(command -v qmake6)}"
+    export QMAKE="${QMAKE:-$(command -v qmake6 || command -v qmake)}"
     export VERSION="$VERSION"
     export OUTPUT="${OUT}"
     cd "$BUILD"
