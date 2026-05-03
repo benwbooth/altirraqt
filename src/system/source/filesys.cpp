@@ -564,7 +564,11 @@ VDStringW VDFileResolvePath(const wchar_t *basePath, const wchar_t *pathToResolv
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <sys/statvfs.h>
+#endif
 #include <sys/types.h>
 #include <unistd.h>
 #include <utime.h>
@@ -602,11 +606,17 @@ namespace {
 
 sint64 VDGetDiskFreeSpace(const wchar_t *path) {
 	VDStringA p = narrow_path(path);
+#if defined(_WIN32)
+	ULARGE_INTEGER avail{};
+	if (!GetDiskFreeSpaceExA(p.c_str(), &avail, nullptr, nullptr))
+		return -1;
+	return (sint64)avail.QuadPart;
+#else
 	struct statvfs vfs{};
 	if (statvfs(p.c_str(), &vfs) != 0)
 		return -1;
-
 	return (sint64)vfs.f_bavail * (sint64)vfs.f_frsize;
+#endif
 }
 
 bool VDDoesPathExist(const wchar_t *fileName) {
