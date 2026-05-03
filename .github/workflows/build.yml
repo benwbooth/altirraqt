@@ -157,7 +157,7 @@ jobs:
             -DPREBUILT_KERNEL_ROMS_DIR="$PWD/prebuilt-roms"
       - name: Build
         run: cmake --build build -j
-      - name: Bundle (macdeployqt)
+      - name: Bundle (macdeployqt + hdiutil → DMG)
         run: |
           APP="build/src/altirraqt/altirraqt.app"
           if [ ! -d "$APP" ]; then
@@ -166,12 +166,14 @@ jobs:
             exit 1
           fi
           macdeployqt "$APP"
-          ditto -c -k --keepParent "$APP" "altirraqt-macos-${{ matrix.arch }}.zip"
-          ls -lh "altirraqt-macos-${{ matrix.arch }}.zip"
+          DMG="altirraqt-macos-${{ matrix.arch }}.dmg"
+          hdiutil create -volname altirraqt -srcfolder "$APP" \
+                         -format UDZO -ov "$DMG"
+          ls -lh "$DMG"
       - uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
-          path: altirraqt-macos-${{ matrix.arch }}.zip
+          path: altirraqt-macos-${{ matrix.arch }}.dmg
 
   # -----------------------------------------------------------------------
   # Windows via MSYS2 / MinGW-w64 / Clang. Avoids MSVC entirely because the
@@ -198,10 +200,10 @@ jobs:
           update: true
           install: >-
             git
-            zip
             mingw-w64-clang-x86_64-clang
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-ninja
+            mingw-w64-clang-x86_64-nsis
             mingw-w64-clang-x86_64-qt6-base
             mingw-w64-clang-x86_64-qt6-multimedia
             mingw-w64-clang-x86_64-qt6-tools
@@ -215,7 +217,7 @@ jobs:
             -DPREBUILT_KERNEL_ROMS_DIR="$(pwd)/prebuilt-roms"
       - name: Build
         run: cmake --build build -j
-      - name: Bundle (windeployqt)
+      - name: Bundle (windeployqt → NSIS installer)
         run: |
           mkdir -p dist/altirraqt
           cp build/src/altirraqt/altirraqt.exe dist/altirraqt/
@@ -227,18 +229,24 @@ jobs:
           fi
           "$DEPLOY" --release --no-translations --no-system-d3d-compiler \
                     --no-opengl-sw dist/altirraqt/altirraqt.exe
-          # MinGW runtime + Clang runtime DLLs the binary loads.
+          # MinGW + Clang runtime DLLs the binary loads.
           for dll in libc++.dll libunwind.dll libwinpthread-1.dll \
                      zlib1.dll libssp-0.dll; do
             f="/clang64/bin/$dll"
             [ -f "$f" ] && cp "$f" dist/altirraqt/ || true
           done
-          /usr/bin/zip -r altirraqt-windows-x86_64.zip ./dist/altirraqt
-          ls -lh altirraqt-windows-x86_64.zip
+          # Build the installer.
+          VERSION=$(git describe --tags --always 2>/dev/null || echo dev)
+          OUT="altirraqt-${VERSION}-windows-x86_64-installer.exe"
+          makensis -DSRCDIR=dist/altirraqt \
+                   -DOUTFILE="$OUT" \
+                   -DAPPVERSION="$VERSION" \
+                   packaging/windows/altirraqt.nsi
+          ls -lh "$OUT"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64
-          path: altirraqt-windows-x86_64.zip
+          path: altirraqt-*-windows-x86_64-installer.exe
 
   # -----------------------------------------------------------------------
   # On v* tag pushes, publish the Flatpak OSTree repo to GitHub Pages so
@@ -322,7 +330,7 @@ jobs:
           mkdir -p release-files
           find artifacts -type f \
                \( -name '*.AppImage' -o -name '*.flatpak' \
-                  -o -name '*.zip' \) \
+                  -o -name '*.dmg' -o -name '*.exe' \) \
                -exec cp {} release-files/ \;
           ls -lh release-files/
       - name: Attach to release
