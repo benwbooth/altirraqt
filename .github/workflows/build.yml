@@ -258,44 +258,44 @@ jobs:
           path: .
       - name: Stage gh-pages content
         run: |
+          set -e
           mkdir -p pages-out
           tar -C pages-out -xf flatpak-repo.tar
-          # Now: pages-out/repo/ holds the OSTree bare-user repo.
           REPO_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/altirraqt"
-          cat > pages-out/altirraqt.flatpakrepo <<EOF
-          [Flatpak Repo]
-          Title=altirraqt
-          Url=$REPO_URL/repo/
-          Homepage=https://github.com/${GITHUB_REPOSITORY}
-          Description=Qt port of Altirra (Atari 8-bit emulator). Self-published; users add with --no-gpg-verify.
-          NoDeps=false
-          EOF
-          cat > pages-out/index.html <<EOF
-          <!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <title>altirraqt — Flatpak repo</title>
-            <style>
-              body { font-family: system-ui, sans-serif; max-width: 720px; margin: 3em auto; padding: 0 1em; line-height: 1.5; }
-              code, pre { font-family: ui-monospace, monospace; background: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }
-              pre { padding: 0.8em 1em; overflow-x: auto; }
-              h1, h2 { margin-top: 1.5em; }
-            </style>
-          </head>
-          <body>
-            <h1>altirraqt — Flatpak repo</h1>
-            <p>Qt port of <a href="https://www.virtualdub.org/altirra.html">Altirra</a> (Atari 8-bit emulator). Source on <a href="https://github.com/${GITHUB_REPOSITORY}">GitHub</a>.</p>
-            <h2>Install</h2>
-            <pre>flatpak --user remote-add --no-gpg-verify altirraqt \\
-    $REPO_URL/altirraqt.flatpakrepo
-flatpak --user install altirraqt com.virtualdub.altirraqt</pre>
-            <p>Update later with <code>flatpak --user update com.virtualdub.altirraqt</code>.</p>
-            <h2>Other downloads</h2>
-            <p>AppImage and Windows / macOS binaries: <a href="https://github.com/${GITHUB_REPOSITORY}/releases/latest">latest GitHub release</a>.</p>
-          </body>
-          </html>
-          EOF
+          # .flatpakrepo: machine-readable description for `flatpak remote-add`.
+          {
+            echo "[Flatpak Repo]"
+            echo "Title=altirraqt"
+            echo "Url=$REPO_URL/repo/"
+            echo "Homepage=https://github.com/${GITHUB_REPOSITORY}"
+            echo "Description=Qt port of Altirra (Atari 8-bit). Self-published; add with --no-gpg-verify."
+            echo "NoDeps=false"
+          } > pages-out/altirraqt.flatpakrepo
+          # index.html: human-readable landing page.
+          python3 - "$REPO_URL" "$GITHUB_REPOSITORY" > pages-out/index.html <<'PY'
+          import sys
+          repo_url, gh_repo = sys.argv[1], sys.argv[2]
+          print(f"""<!doctype html>
+          <html lang="en"><head><meta charset="utf-8">
+          <title>altirraqt — Flatpak repo</title>
+          <style>
+            body {{ font-family: system-ui, sans-serif; max-width: 720px; margin: 3em auto; padding: 0 1em; line-height: 1.5; }}
+            code, pre {{ font-family: ui-monospace, monospace; background: #f4f4f4; padding: .2em .4em; border-radius: 3px; }}
+            pre {{ padding: .8em 1em; overflow-x: auto; white-space: pre; }}
+            h1, h2 {{ margin-top: 1.5em; }}
+          </style></head><body>
+          <h1>altirraqt — Flatpak repo</h1>
+          <p>Qt port of <a href="https://www.virtualdub.org/altirra.html">Altirra</a> (Atari 8-bit emulator).
+             Source on <a href="https://github.com/{gh_repo}">GitHub</a>.</p>
+          <h2>Install</h2>
+          <pre>flatpak --user remote-add --no-gpg-verify altirraqt \\
+              {repo_url}/altirraqt.flatpakrepo
+          flatpak --user install altirraqt com.virtualdub.altirraqt</pre>
+          <p>Update later with <code>flatpak --user update com.virtualdub.altirraqt</code>.</p>
+          <h2>Other downloads</h2>
+          <p>AppImage and Windows / macOS binaries: <a href="https://github.com/{gh_repo}/releases/latest">latest GitHub release</a>.</p>
+          </body></html>""")
+          PY
           rm -f pages-out/flatpak-repo.tar
           ls -lR pages-out | head -40
       - uses: peaceiris/actions-gh-pages@v4
