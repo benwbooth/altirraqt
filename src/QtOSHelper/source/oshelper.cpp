@@ -317,7 +317,15 @@ void ATLaunchFileForEdit(const wchar_t *file) {
 //-----------------------------------------------------------------------------
 
 bool ATIsUserAdministrator() {
+#if defined(_WIN32)
+	// Windows: there's a CheckTokenMembership-with-builtin-admins-SID dance
+	// for this, but the only caller uses it to decide whether to offer the
+	// "elevate" UI. Returning false unconditionally just means we never
+	// offer it, which is fine since ATRelaunchElevated below is a no-op.
+	return false;
+#else
 	return geteuid() == 0;
+#endif
 }
 
 void ATRelaunchElevated(VDGUIHandle /*parent*/, const wchar_t * /*params*/) {}
