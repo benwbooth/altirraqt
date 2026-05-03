@@ -126,15 +126,64 @@ jobs:
           path: altirraqt-macos-${{ matrix.arch }}.zip
 
   # -----------------------------------------------------------------------
-  # Windows: deferred. Native Altirra (the upstream this is a Qt port of)
-  # already ships a polished Win32 build at virtualdub.org/altirra.html, so
-  # a Qt port on Windows duplicates work for little user benefit. The Qt
-  # port also assumes a POSIX system library (src/system/source/thread.cpp,
-  # memory.cpp, process.cpp, filesys.cpp depend on pthread/sys/syscall/
-  # unistd) that MSVC doesn't provide. Re-porting those to Win32 is several
-  # days of careful work; not gated on this CI rollout. Drop in a windows
-  # job here when/if that port lands.
+  # Windows via MSYS2 / MinGW-w64 / Clang. Avoids MSVC entirely because the
+  # Qt port's system library (thread.cpp, memory.cpp, file.cpp, …) assumes
+  # POSIX headers — pthread, unistd, sys/syscall — which MinGW supplies via
+  # winpthreads but MSVC does not. Clang also accepts both POSIX dialect
+  # and the few MSVC intrinsics already shimmed for the macOS build.
   # -----------------------------------------------------------------------
+  windows:
+    needs: prebuild-roms
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: prebuilt-roms
+          path: prebuilt-roms/
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >-
+            git
+            mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-ninja
+            mingw-w64-clang-x86_64-qt6-base
+            mingw-w64-clang-x86_64-qt6-multimedia
+            mingw-w64-clang-x86_64-qt6-tools
+            mingw-w64-clang-x86_64-zlib
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DPREBUILT_KERNEL_ROMS_DIR="$(pwd)/prebuilt-roms"
+      - name: Build
+        run: cmake --build build -j
+      - name: Bundle (windeployqt-qt6)
+        run: |
+          mkdir -p dist/altirraqt
+          cp build/src/altirraqt/altirraqt.exe dist/altirraqt/
+          windeployqt-qt6 --release --no-translations --no-system-d3d-compiler \
+                          --no-opengl-sw dist/altirraqt/altirraqt.exe
+          # MinGW runtime + Clang runtime DLLs the binary loads.
+          for dll in libc++.dll libunwind.dll libwinpthread-1.dll \
+                     zlib1.dll libssp-0.dll; do
+            f="/clang64/bin/$dll"
+            [ -f "$f" ] && cp "$f" dist/altirraqt/ || true
+          done
+          /usr/bin/zip -r altirraqt-windows-x86_64.zip ./dist/altirraqt
+          ls -lh altirraqt-windows-x86_64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: altirraqt-windows-x86_64.zip
 
   # -----------------------------------------------------------------------
   # On v* tag pushes, attach all platform artifacts to the GH release.
@@ -142,7 +191,7 @@ jobs:
   # -----------------------------------------------------------------------
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, macos]
+    needs: [linux, macos, windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
