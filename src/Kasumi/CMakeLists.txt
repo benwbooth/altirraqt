@@ -46,6 +46,14 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
         source/resample_stages_x64.cpp
         source/uberblit_ycbcr_sse2_intrin.cpp
     )
+    if(WIN32)
+        # MinGW lld is stricter than GNU ld about the unresolved
+        # vdasm_resize_table_*_SSE2 references in resample_stages_x64.cpp
+        # (those would normally come from upstream Altirra's MASM .asm,
+        # which we don't carry). Provide a slow scalar fallback so the
+        # link goes through.
+        target_sources(kasumi PRIVATE source/resample_stages_x64_stubs.cpp)
+    endif()
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
     target_sources(kasumi PRIVATE
         source/blt_spanutils_arm64.cpp
