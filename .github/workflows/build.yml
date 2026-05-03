@@ -150,6 +150,7 @@ jobs:
           update: true
           install: >-
             git
+            zip
             mingw-w64-clang-x86_64-clang
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-ninja
