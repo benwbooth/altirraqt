@@ -63,6 +63,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            clang \
             cmake ninja-build pkg-config \
             qt6-base-dev qt6-multimedia-dev qt6-tools-dev \
             qt6-tools-dev-tools libqt6opengl6-dev \
@@ -71,6 +72,10 @@ jobs:
             flatpak flatpak-builder
       - name: Build AppImage + Flatpak
         env:
+          # The codebase has Clang-specific paths (vdasm_uint128 inline asm,
+          # _Pragma fold-expression tricks); GCC won't compile it.
+          CC: clang
+          CXX: clang++
           PREBUILT_KERNEL_ROMS_DIR: ${{ github.workspace }}/prebuilt-roms
         run: tools/release.sh
       - name: Inventory
