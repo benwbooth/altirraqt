@@ -598,7 +598,9 @@ namespace {
 	uint32 AttrsFromStat(const struct stat& st) {
 		uint32 attrs = 0;
 		if (S_ISDIR(st.st_mode))  attrs |= kVDFileAttr_Directory;
+#ifdef S_ISLNK
 		if (S_ISLNK(st.st_mode))  attrs |= kVDFileAttr_Link;
+#endif
 		if (!(st.st_mode & S_IWUSR)) attrs |= kVDFileAttr_ReadOnly;
 		return attrs;
 	}
@@ -630,7 +632,11 @@ void VDCreateDirectory(const wchar_t *path) {
 	if (!p.empty() && (p.back() == '/' || p.back() == '\\'))
 		p.pop_back();
 
+#if defined(_WIN32)
+	if (_mkdir(p.c_str()) != 0 && errno != EEXIST)
+#else
 	if (mkdir(p.c_str(), 0777) != 0 && errno != EEXIST)
+#endif
 		throw VDException("Cannot create directory \"%s\": %s", p.c_str(), strerror(errno));
 }
 
@@ -650,7 +656,12 @@ void VDSetDirectoryCreationTime(const wchar_t *path, const VDDate& date) {
 	times[0].tv_sec  = (time_t)(sinceUnix / 10000000ull);
 	times[0].tv_nsec = (long)((sinceUnix % 10000000ull) * 100ull);
 	times[1] = times[0];
+#if defined(_WIN32)
+	struct _utimbuf buf{times[0].tv_sec, times[1].tv_sec};
+	(void)_utime(p.c_str(), &buf);
+#else
 	(void)utimensat(AT_FDCWD, p.c_str(), times, 0);
+#endif
 }
 
 bool VDRemoveFile(const wchar_t *path) {
@@ -680,6 +691,8 @@ uint64 VDFileGetLastWriteTime(const wchar_t *path) {
 
 #if defined(__APPLE__)
 	struct timespec ts = st.st_mtimespec;
+#elif defined(_WIN32)
+	struct timespec ts{(time_t)st.st_mtime, 0};
 #else
 	struct timespec ts = st.st_mtim;
 #endif
@@ -693,7 +706,11 @@ VDStringW VDFileGetRootPath(const wchar_t *) {
 
 VDStringW VDGetFullPath(const wchar_t *partialPath) {
 	VDStringA p = narrow_path(partialPath);
+#if defined(_WIN32)
+	char *resolved = _fullpath(nullptr, p.c_str(), 0);
+#else
 	char *resolved = realpath(p.c_str(), nullptr);
+#endif
 	if (!resolved) {
 		// realpath fails if the path doesn't exist; fall back to prepending cwd.
 		if (!p.empty() && p[0] == '/')
@@ -779,6 +796,11 @@ VDStringW VDGetProgramFilePath() {
 	if (realpath(buf, real))
 		return widen_path(real);
 	return widen_path(buf);
+#elif defined(_WIN32)
+	DWORD len = GetModuleFileNameA(nullptr, buf, sizeof buf);
+	if (len == 0 || len >= sizeof buf)
+		throw VDException("Unable to get program path");
+	return widen_path(buf);
 #else
 	ssize_t len = readlink("/proc/self/exe", buf, sizeof buf - 1);
 	if (len < 0)
@@ -805,7 +827,11 @@ VDStringW VDGetRootVolumeLabel(const wchar_t *) {
 uint32 VDFileGetAttributes(const wchar_t *path) {
 	VDStringA p = narrow_path(path);
 	struct stat st{};
+#if defined(_WIN32)
+	if (stat(p.c_str(), &st) != 0)
+#else
 	if (lstat(p.c_str(), &st) != 0)
+#endif
 		return kVDFileAttr_Invalid;
 	return AttrsFromStat(st);
 }
@@ -905,7 +931,12 @@ bool VDDirectoryIterator::Next() {
 
 		VDStringA fullA = VDTextWToU8(st->basePath.c_str(), -1) + ent->d_name;
 		struct stat st2{};
-		if (lstat(fullA.c_str(), &st2) != 0) {
+#if defined(_WIN32)
+		bool ok = (stat(fullA.c_str(), &st2) == 0);
+#else
+		bool ok = (lstat(fullA.c_str(), &st2) == 0);
+#endif
+		if (!ok) {
 			mFileSize = 0;
 			mbDirectory = false;
 			mAttributes = kVDFileAttr_Invalid;
@@ -917,6 +948,9 @@ bool VDDirectoryIterator::Next() {
 		#if defined(__APPLE__)
 			mLastWriteDate = DateFromTimespec(st2.st_mtimespec);
 			mCreationDate  = DateFromTimespec(st2.st_ctimespec);
+		#elif defined(_WIN32)
+			mLastWriteDate = DateFromTimespec(timespec{(time_t)st2.st_mtime, 0});
+			mCreationDate  = DateFromTimespec(timespec{(time_t)st2.st_ctime, 0});
 		#else
 			mLastWriteDate = DateFromTimespec(st2.st_mtim);
 			mCreationDate  = DateFromTimespec(st2.st_ctim);
