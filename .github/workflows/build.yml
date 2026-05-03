@@ -166,12 +166,18 @@ jobs:
             -DPREBUILT_KERNEL_ROMS_DIR="$(pwd)/prebuilt-roms"
       - name: Build
         run: cmake --build build -j
-      - name: Bundle (windeployqt-qt6)
+      - name: Bundle (windeployqt)
         run: |
           mkdir -p dist/altirraqt
           cp build/src/altirraqt/altirraqt.exe dist/altirraqt/
-          windeployqt-qt6 --release --no-translations --no-system-d3d-compiler \
-                          --no-opengl-sw dist/altirraqt/altirraqt.exe
+          # The CLANG64 Qt6 package names the deploy tool 'windeployqt6'
+          # (some older builds: 'windeployqt-qt6'); try both.
+          if command -v windeployqt6 >/dev/null;     then DEPLOY=windeployqt6
+          elif command -v windeployqt-qt6 >/dev/null; then DEPLOY=windeployqt-qt6
+          else                                          DEPLOY=windeployqt
+          fi
+          "$DEPLOY" --release --no-translations --no-system-d3d-compiler \
+                    --no-opengl-sw dist/altirraqt/altirraqt.exe
           # MinGW runtime + Clang runtime DLLs the binary loads.
           for dll in libc++.dll libunwind.dll libwinpthread-1.dll \
                      zlib1.dll libssp-0.dll; do
