@@ -9,13 +9,16 @@
 #include <vd2/system/text.h>
 
 #include <errno.h>
-#include <spawn.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
 extern char **environ;
+#endif
 
 namespace {
 	VDStringA narrow(const wchar_t *s) {
@@ -50,6 +53,24 @@ void VDLaunchProgram(const wchar_t *path, const wchar_t *args) {
 	const VDStringA pathA = narrow(path);
 	const VDStringA argsA = narrow(args);
 
+#if defined(_WIN32)
+	// Build a single command line: "path" args
+	VDStringA cmd("\"");
+	cmd += pathA;
+	cmd += "\"";
+	if (!argsA.empty()) {
+		cmd += " ";
+		cmd += argsA;
+	}
+	STARTUPINFOA si{};
+	si.cb = sizeof si;
+	PROCESS_INFORMATION pi{};
+	if (!CreateProcessA(nullptr, cmd.data(), nullptr, nullptr, FALSE,
+	                    0, nullptr, nullptr, &si, &pi))
+		throw VDException("Unable to launch process (error %lu)", (unsigned long)GetLastError());
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+#else
 	std::vector<VDStringA> argv;
 	argv.push_back(pathA);
 	append_args(argv, argsA);
@@ -64,4 +85,5 @@ void VDLaunchProgram(const wchar_t *path, const wchar_t *args) {
 	int rc = posix_spawnp(&pid, pathA.c_str(), nullptr, nullptr, rawArgv.data(), environ);
 	if (rc != 0)
 		throw VDException("Unable to launch process: %s", strerror(rc));
+#endif
 }

@@ -26,7 +26,11 @@
 #include <stdafx.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <sys/mman.h>
+#endif
 #include <unistd.h>
 
 #if defined(__x86_64__) || defined(__i386__)
@@ -66,17 +70,25 @@ void VDAlignedFree(void *p) vdnoexcept {
 }
 
 void *VDAlignedVirtualAlloc(size_t n) {
+#if defined(_WIN32)
+	return VirtualAlloc(nullptr, n, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
 	void *p = mmap(nullptr, n, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	return p == MAP_FAILED ? nullptr : p;
+#endif
 }
 
 void VDAlignedVirtualFree(void *p) {
+#if defined(_WIN32)
+	if (p) VirtualFree(p, 0, MEM_RELEASE);
+#else
 	// Size isn't tracked here; the original Win32 call used MEM_RELEASE which
 	// also freed without needing the size. On POSIX we lose the size, so we
 	// rely on callers holding the size and using munmap directly for large
 	// buffers. This helper is kept for drop-in compatibility in emulator code
 	// paths that historically leaked on exit anyway.
 	(void)p;
+#endif
 }
 
 void __cdecl VDSwapMemoryScalar(void *p0, void *p1, size_t bytes) {
