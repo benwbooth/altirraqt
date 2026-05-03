@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #	tests/audio.sh
 #
-#	Boots the emulator with --run-anyway, captures $FRAMES frames of audio
+#	Boots the emulator with, captures $FRAMES frames of audio
 #	output to a WAV, and asserts the WAV is non-empty and decodes as a
 #	44.1 kHz stereo PCM stream. Exact-byte hash comparison is intentionally
 #	NOT done — the simulator is driven by a wall-clock QTimer rather than
@@ -22,7 +22,7 @@ if [[ ! -x "$BIN" ]]; then
     exit 2
 fi
 
-timeout 30 "$BIN" --run-anyway --audio-soak "${FRAMES}:${WORK}/audio.wav" >/dev/null 2>&1
+timeout 30 "$BIN" --audio-soak "${FRAMES}:${WORK}/audio.wav" >/dev/null 2>&1
 
 # Sanity-check the WAV: at least 1 MB of audio for 60 frames, RIFF/WAVE magic.
 size=$(stat -c '%s' "${WORK}/audio.wav")

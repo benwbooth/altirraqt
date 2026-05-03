@@ -17,9 +17,8 @@ Re-baseline after intentional rendering changes:
 ## `devices.sh`
 
 Walks every device class registered via `ATRegisterDevicesQt` and runs a
-state-save → load → save round-trip with `--run-anyway
---save-state-roundtrip`. Any class whose state isn't byte-stable after a
-load fails the script.
+state-save → load → save round-trip with `--save-state-roundtrip`. Any
+class whose state isn't byte-stable after a load fails the script.
 
 ## `audio.sh`
 

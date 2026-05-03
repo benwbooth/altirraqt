@@ -3141,10 +3141,6 @@ void buildHelpMenu(QMenuBar *bar, ATAltirraMenuContext& ctx) {
 			"      --load-state <file>      Load <file> as a save state at startup\n"
 			"                               (after kernel ROMs are registered, before\n"
 			"                               ColdReset).\n"
-			"      --run-anyway             Resume the simulator after ColdReset. The\n"
-			"                               emulator runs the boot sequence and renders\n"
-			"                               frames; without --run-anyway it stays paused\n"
-			"                               after ColdReset (smoke-test mode).\n"
 		));
 
 		auto *btnBox = new QDialogButtonBox(QDialogButtonBox::Close, dlg);

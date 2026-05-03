@@ -73,12 +73,6 @@ ColdReset).
 Save state, load it back, save again, and compare the two saved blobs
 byte-for-byte. Exits 0 on match, 1 on mismatch. Used as a CI gate for
 state-format stability.
-.TP
-.B \-\-run-anyway
-Resume the simulator after ColdReset. The emulator runs the boot
-sequence and renders frames; without
-.B \-\-run-anyway
-it stays paused after ColdReset (smoke-test mode).
 .SH KEYBOARD
 .TS
 l l.

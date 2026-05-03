@@ -297,10 +297,6 @@ int main(int argc, char *argv[]) {
 		QStringLiteral("Path to an Atari BASIC ROM"),
 		QStringLiteral("file"));
 
-	QCommandLineOption runAnywayOpt(
-		QStringLiteral("run-anyway"),
-		QStringLiteral("Resume the simulator after ColdReset. The emulator runs the boot sequence and renders frames; without --run-anyway it stays paused after ColdReset (smoke-test mode)."));
-
 	QCommandLineOption screenshotOpt(
 		QStringLiteral("screenshot"),
 		QStringLiteral("After <seconds> of run time, save a screenshot of the display widget to <path>, then quit."),
@@ -349,7 +345,6 @@ int main(int argc, char *argv[]) {
 
 	parser.addOption(kernelOpt);
 	parser.addOption(basicOpt);
-	parser.addOption(runAnywayOpt);
 	parser.addOption(screenshotOpt);
 	parser.addOption(typeOpt);
 	parser.addOption(imageOpt);
@@ -618,13 +613,7 @@ int main(int argc, char *argv[]) {
 	ATSettingsFireLoadCallbacks();
 
 	sim->ColdReset();
-
-	// The audio mixer dereferences state that isn't fully wired up on a
-	// clean Linux Init+ColdReset path. On Windows it works because the
-	// _DEBUG heap is zeroed and the WASAPI minidriver routes differently.
-	// --run-anyway opts in if you've patched around it.
-	if (parser.isSet(QStringLiteral("run-anyway")))
-		sim->Resume();
+	sim->Resume();
 
 	// Build the full menu bar matching upstream Altirra's layout — see
 	// menus.cpp.

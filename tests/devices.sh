@@ -35,7 +35,7 @@ for tag in modem blackbox blackbox_floppy mio harddisk rtime8 covox xep80 \
            hostdevice pclink browser; do
     total=$((total+1))
     out="$WORK/${tag}.rt"
-    if timeout 15 "$BIN" --run-anyway --save-state-roundtrip "$out" \
+    if timeout 15 "$BIN" --save-state-roundtrip "$out" \
             >"$WORK/$tag.log" 2>&1; then
         echo "devices: $tag: OK"
     else
