@@ -8,6 +8,8 @@
 #include <vd2/system/VDString.h>
 #include <vd2/system/text.h>
 
+#include <vector>
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,7 +67,10 @@ void VDLaunchProgram(const wchar_t *path, const wchar_t *args) {
 	STARTUPINFOA si{};
 	si.cb = sizeof si;
 	PROCESS_INFORMATION pi{};
-	if (!CreateProcessA(nullptr, cmd.data(), nullptr, nullptr, FALSE,
+	// CreateProcessA wants a writable buffer for the command line.
+	std::vector<char> cmdBuf(cmd.begin(), cmd.end());
+	cmdBuf.push_back('\0');
+	if (!CreateProcessA(nullptr, cmdBuf.data(), nullptr, nullptr, FALSE,
 	                    0, nullptr, nullptr, &si, &pi))
 		throw VDException("Unable to launch process (error %lu)", (unsigned long)GetLastError());
 	CloseHandle(pi.hThread);

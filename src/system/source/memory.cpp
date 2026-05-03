@@ -185,7 +185,15 @@ void VDInvertMemory(void *p, unsigned bytes) {
 
 namespace {
 	uintptr VDGetSystemPageSize() {
+#if defined(_WIN32)
+		static const uintptr pageSize = []{
+			SYSTEM_INFO si{};
+			GetSystemInfo(&si);
+			return (uintptr)si.dwPageSize;
+		}();
+#else
 		static const uintptr pageSize = (uintptr)sysconf(_SC_PAGESIZE);
+#endif
 		return pageSize;
 	}
 }
