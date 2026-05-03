@@ -166,8 +166,14 @@ jobs:
             exit 1
           fi
           macdeployqt "$APP"
+          # Stage the .app in its own dir so hdiutil's UDIF tar doesn't
+          # race with Spotlight/XPC daemons still indexing the build tree
+          # (causes "create failed - Resource busy" on hosted runners).
+          STAGE=$(mktemp -d)
+          ditto "$APP" "$STAGE/altirraqt.app"
+          sleep 2
           DMG="altirraqt-macos-${{ matrix.arch }}.dmg"
-          hdiutil create -volname altirraqt -srcfolder "$APP" \
+          hdiutil create -volname altirraqt -srcfolder "$STAGE" \
                          -format UDZO -ov "$DMG"
           ls -lh "$DMG"
       - uses: actions/upload-artifact@v4
