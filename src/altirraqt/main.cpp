@@ -43,6 +43,7 @@ struct ATIndicatorState {
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QSurfaceFormat>
 #include <QCommandLineParser>
 #include <QImage>
 #include <QKeySequence>
@@ -242,6 +243,18 @@ static void ATQuietVdpauProbe() {}
 
 int main(int argc, char *argv[]) {
 	ATQuietVdpauProbe();
+
+	// Request OpenGL 3.3 Core. macOS only ships compatibility GL 2.1 by
+	// default; without an explicit Core context the QtDisplay backend's
+	// `#version 330 core` shaders silently fail to compile and the screen
+	// stays the clear color.
+	{
+		QSurfaceFormat fmt;
+		fmt.setVersion(3, 3);
+		fmt.setProfile(QSurfaceFormat::CoreProfile);
+		QSurfaceFormat::setDefaultFormat(fmt);
+	}
+
 	QApplication app(argc, argv);
 	app.setOrganizationName(QStringLiteral("Altirra Qt port"));
 	app.setApplicationName(QStringLiteral("altirraqt"));
